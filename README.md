@@ -199,6 +199,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 🔗 Links
 
 - **Website**: [recoder.xyz](https://recoder.xyz)
+- **GitHub**: [recoderxyz/recoder-code](https://github.com/recoderxyz/recoder-code)
 - **Documentation**: [docs.recoder.xyz](https://docs.recoder.xyz) 
 - **Discord**: [Join our community](https://discord.gg/recoder)
 - **NPM Package**: [recoder-code](https://www.npmjs.com/package/recoder-code)

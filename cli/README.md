@@ -40,8 +40,8 @@ yarn global add recoder-code-cli
 
 ```bash
 # Clone repository
-git clone https://github.com/recoder-team/recoder.git
-cd recoder/packages/recoder-code/packages/cli
+git clone https://github.com/recoderxyz/recoder-code.git
+cd recoder-code/cli
 
 # Install dependencies and build
 npm install
@@ -54,7 +54,7 @@ npm link
 ### Docker
 
 ```bash
-docker run -it --rm -v $(pwd):/workspace ghcr.io/recoder-team/recoder-code:latest
+docker run -it --rm -v $(pwd):/workspace ghcr.io/recoderxyz/recoder-code:latest
 ```
 
 ## Requirements
@@ -277,7 +277,7 @@ npm install -g recoder-code-cli
 
 - **Website:** https://recoder.xyz
 - **Documentation:** https://recoder.xyz/docs
-- **GitHub:** https://github.com/recoder-team/recoder
+- **GitHub:** https://github.com/recoderxyz/recoder-code
 - **npm:** https://www.npmjs.com/package/recoder-code-cli
 
 ## License
