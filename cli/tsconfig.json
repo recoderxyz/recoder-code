@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
+    "types": ["node"],
+    "skipLibCheck": true,
+    "strict": false,
+    "target": "ES2022",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "rootDir": ".",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "noEmitOnError": false
+  },
+  "include": ["index.ts", "src/**/*.ts", "src/**/*.tsx"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/test-utils"
+  ]
+}

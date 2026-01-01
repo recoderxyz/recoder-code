@@ -1,0 +1,261 @@
+/**
+ * Quota Checking Service
+ * Checks user quota before making API requests
+ */
+
+export interface QuotaInfo {
+  requestsLimit: number;
+  requestsUsed: number;
+  requestsRemaining: number;
+  resetDate: Date;
+  subscriptionPlan: 'free' | 'pro' | 'enterprise';
+}
+
+export class QuotaExceededError extends Error {
+  constructor(
+    public quota: QuotaInfo,
+    message?: string,
+  ) {
+    super(message || 'Request quota exceeded');
+    this.name = 'QuotaExceededError';
+  }
+}
+
+export class QuotaChecker {
+  private quotaCache: QuotaInfo | null = null;
+  private cacheExpiry: number = 0;
+  private readonly CACHE_TTL_MS = 60 * 1000; // 1 minute
+
+  /**
+   * Check if user can make a request
+   * Throws QuotaExceededError if quota is exceeded
+   */
+  async checkQuota(): Promise<QuotaInfo> {
+    const quota = await this.getQuotaInfo();
+
+    if (quota.requestsRemaining <= 0) {
+      throw new QuotaExceededError(
+        quota,
+        this.buildQuotaExceededMessage(quota),
+      );
+    }
+
+    return quota;
+  }
+
+  /**
+   * Check if user can make a request (boolean)
+   */
+  async canMakeRequest(): Promise<boolean> {
+    try {
+      await this.checkQuota();
+      return true;
+    } catch (error) {
+      if (error instanceof QuotaExceededError) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get current quota information
+   */
+  async getQuotaInfo(): Promise<QuotaInfo> {
+    // Check cache first
+    if (this.quotaCache && Date.now() < this.cacheExpiry) {
+      return this.quotaCache;
+    }
+
+    // Try to fetch from backend
+    try {
+      const quota = await this.fetchQuotaFromBackend();
+      this.quotaCache = quota;
+      this.cacheExpiry = Date.now() + this.CACHE_TTL_MS;
+      return quota;
+    } catch (error) {
+      // If backend fetch fails, return a permissive default
+      // This ensures the CLI continues to work even if backend is down
+      console.warn('Failed to fetch quota from backend, using default:', error);
+      return this.getDefaultQuota();
+    }
+  }
+
+  /**
+   * Show upgrade prompt to user
+   */
+  showUpgradePrompt(quota: QuotaInfo): void {
+    console.error('\n');
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('🚫 Monthly Request Quota Exceeded');
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('');
+    console.error(`Current Plan: ${quota.subscriptionPlan.toUpperCase()}`);
+    console.error(`Requests Used: ${quota.requestsUsed} / ${quota.requestsLimit}`);
+    console.error(`Resets On: ${this.formatDate(quota.resetDate)}`);
+    console.error('');
+
+    if (quota.subscriptionPlan === 'free') {
+      console.error('💡 Upgrade to Pro for more requests:');
+      console.error('');
+      console.error('   Pro Plan ($29/month):');
+      console.error('   • 50,000 requests/month');
+      console.error('   • No API key required');
+      console.error('   • Priority support');
+      console.error('');
+      console.error('   Enterprise Plan ($299/month):');
+      console.error('   • 1,000,000 requests/month');
+      console.error('   • Dedicated API keys');
+      console.error('   • Custom features & SLA');
+      console.error('');
+      console.error('👉 Visit https://recoder.xyz/upgrade to upgrade');
+    } else if (quota.subscriptionPlan === 'pro') {
+      console.error('💡 Upgrade to Enterprise for higher limits:');
+      console.error('');
+      console.error('   Enterprise Plan ($299/month):');
+      console.error('   • 1,000,000 requests/month');
+      console.error('   • Dedicated API keys');
+      console.error('   • Custom features & SLA');
+      console.error('');
+      console.error('👉 Visit https://recoder.xyz/upgrade to upgrade');
+    } else {
+      console.error('💡 Contact us for custom enterprise limits:');
+      console.error('');
+      console.error('👉 Email: enterprise@recoder.xyz');
+    }
+
+    console.error('');
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('\n');
+  }
+
+  /**
+   * Get warning level based on remaining quota
+   */
+  getWarningLevel(quota: QuotaInfo): 'none' | 'low' | 'critical' {
+    const percentageUsed = (quota.requestsUsed / quota.requestsLimit) * 100;
+
+    if (percentageUsed >= 95) {
+      return 'critical';
+    } else if (percentageUsed >= 80) {
+      return 'low';
+    }
+
+    return 'none';
+  }
+
+  /**
+   * Show warning if quota is running low
+   */
+  showWarningIfNeeded(quota: QuotaInfo): void {
+    const warningLevel = this.getWarningLevel(quota);
+
+    if (warningLevel === 'critical') {
+      console.warn('');
+      console.warn('⚠️  WARNING: You have used 95% of your monthly quota!');
+      console.warn(`   Remaining requests: ${quota.requestsRemaining}`);
+      console.warn(`   Resets on: ${this.formatDate(quota.resetDate)}`);
+      console.warn('   Consider upgrading at https://recoder.xyz/upgrade');
+      console.warn('');
+    } else if (warningLevel === 'low') {
+      console.warn('');
+      console.warn(`⚠️  You have used 80% of your monthly quota (${quota.requestsRemaining} remaining)`);
+      console.warn('');
+    }
+  }
+
+  /**
+   * Clear cached quota (force refresh on next check)
+   */
+  clearCache(): void {
+    this.quotaCache = null;
+    this.cacheExpiry = 0;
+  }
+
+  // Private helper methods
+
+  private async fetchQuotaFromBackend(): Promise<QuotaInfo> {
+    const { RecoderAuthService } = await import(
+      '../../../cli/src/services/RecoderAuthService.js'
+    );
+    const authService = new RecoderAuthService();
+
+    const isAuthenticated = await authService.isAuthenticated();
+    if (!isAuthenticated) {
+      // If not authenticated with recoder, return unlimited quota
+      // (user is using direct OpenRouter authentication)
+      return {
+        requestsLimit: 999999,
+        requestsUsed: 0,
+        requestsRemaining: 999999,
+        resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        subscriptionPlan: 'free',
+      };
+    }
+
+    const RECODER_API_BASE = process.env['RECODER_API_URL'] || 'https://recoder.xyz';
+    const token = await authService.getAccessToken();
+
+    if (!token) {
+      throw new Error('No access token available');
+    }
+
+    const response = await fetch(`${RECODER_API_BASE}/api/user/quota`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch quota: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      requestsLimit: data.requestsLimit,
+      requestsUsed: data.requestsUsed,
+      requestsRemaining: data.requestsRemaining,
+      resetDate: new Date(data.resetDate),
+      subscriptionPlan: data.subscriptionPlan || 'free',
+    };
+  }
+
+  private getDefaultQuota(): QuotaInfo {
+    // Return a permissive default quota if backend is unavailable
+    return {
+      requestsLimit: 999999,
+      requestsUsed: 0,
+      requestsRemaining: 999999,
+      resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      subscriptionPlan: 'free',
+    };
+  }
+
+  private buildQuotaExceededMessage(quota: QuotaInfo): string {
+    return (
+      `You have exceeded your monthly request quota.\n` +
+      `Used: ${quota.requestsUsed} / ${quota.requestsLimit}\n` +
+      `Resets on: ${this.formatDate(quota.resetDate)}\n` +
+      `Visit https://recoder.xyz/upgrade to increase your limits.`
+    );
+  }
+
+  private formatDate(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+}
+
+// Singleton instance
+let quotaCheckerInstance: QuotaChecker | null = null;
+
+export function getQuotaChecker(): QuotaChecker {
+  if (!quotaCheckerInstance) {
+    quotaCheckerInstance = new QuotaChecker();
+  }
+  return quotaCheckerInstance;
+}

@@ -1,0 +1,90 @@
+=============================================================================
+RECODER CODE VSCODE EXTENSION - COMMANDS REFERENCE
+=============================================================================
+
+ALL AVAILABLE COMMANDS (Cmd+Shift+P):
+
+AUTHENTICATION
+--------------
+Recoder Code: Login
+Recoder Code: Logout
+Recoder Code: Show Auth Status
+Recoder Code: Set OpenRouter API Key
+
+CHAT
+----
+Recoder Code: Open Chat
+
+MODELS
+------
+Recoder Code: Browse Models
+Recoder Code: Compare Models
+
+CODE ACTIONS (also available via right-click on selected code)
+------------
+Recoder Code: Explain This
+Recoder Code: Refactor This
+Recoder Code: Add Comments
+Recoder Code: Generate Tests
+
+OPENROUTER
+----------
+Recoder Code: Show OpenRouter Credits
+Recoder Code: Estimate Cost
+Recoder Code: Show Activity
+
+CONTEXT MENU (Right-click on selected code)
+-------------
+When you select code and right-click, you'll see:
+- Recoder Code: Explain This
+- Recoder Code: Refactor This
+- Recoder Code: Add Comments
+- Recoder Code: Generate Tests
+
+SIDEBAR VIEWS (Click Recoder Code icon in Activity Bar)
+-------------
+1. Authentication - Shows login status, user info, plan
+2. Models - Browse and select from 40+ AI models
+3. Usage & Credits - Real-time OpenRouter usage tracking
+
+STATUS BAR (Bottom right)
+----------
+Shows selected model or login status
+Click to open model browser
+
+QUICK START
+-----------
+1. Click Recoder Code icon in Activity Bar (left sidebar)
+2. Run: Recoder Code: Login
+3. Choose auth method (Web OAuth recommended)
+4. Select a model from Models sidebar
+5. Run: Recoder Code: Open Chat
+6. Start chatting with AI!
+
+WORKFLOW EXAMPLES
+-----------------
+
+Example 1: Explain Code
+1. Select some code
+2. Right-click → "Recoder Code: Explain This"
+3. Read explanation in output channel
+
+Example 2: Chat with File Context
+1. Open a code file
+2. Run: Recoder Code: Open Chat
+3. Check "Include current file/selection as context"
+4. Ask: "What does this code do?"
+
+Example 3: Generate Tests
+1. Select a function
+2. Right-click → "Recoder Code: Generate Tests"
+3. Review tests in output channel
+4. Choose to create test file
+
+Example 4: Refactor Code
+1. Select code that needs refactoring
+2. Right-click → "Recoder Code: Refactor This"
+3. Review suggestions
+4. Apply improvements
+
+=============================================================================

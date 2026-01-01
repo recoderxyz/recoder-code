@@ -1,0 +1,362 @@
+/**
+ * @license
+ * Copyright 2025 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import type { MCPServerConfig } from '@qwen-code/qwen-code-core';
+
+/**
+ * Default MCP servers that come pre-configured with Recoder Code.
+ * These servers have been tested and confirmed working.
+ * 
+ * Only includes servers with published npm packages to avoid connection errors.
+ */
+export const DEFAULT_MCP_SERVERS: Record<string, MCPServerConfig> = {
+  // ==================== VERIFIED WORKING MCP SERVERS ====================
+
+  // GitHub MCP - Eliminates context switching to GitHub
+  github: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-github'],
+    description: `GitHub MCP server - Manage repositories, issues, and pull requests without leaving your environment.
+Capabilities: repository management, issue tracking, PR operations, content modification.
+Saves time by keeping you in your workflow.`,
+    trust: false,
+    timeout: 30000,
+    env: {
+      GITHUB_PERSONAL_ACCESS_TOKEN: '${GITHUB_TOKEN}',
+    },
+  },
+
+  // Playwright MCP - Modern cross-browser testing and automation
+  playwright: {
+    command: 'npx',
+    args: ['-y', '@playwright/mcp@latest'],
+    description: `Playwright MCP server - Fast, lightweight browser automation using accessibility tree.
+Capabilities: navigate, click, fill forms, screenshot, DOM interaction, cross-browser testing.
+LLM-friendly structured approach without vision models. Essential for web automation.`,
+    trust: false,
+    timeout: 60000,
+  },
+
+  // Sequential Thinking MCP - Structured problem-solving
+  'sequential-thinking': {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-sequential-thinking'],
+    description: `Sequential Thinking MCP - Breaks down complex problems into manageable steps.
+Ideal for: system design planning, architectural decisions, refactoring strategies.
+Enables structured problem-solving for complex development tasks.`,
+    trust: false,
+    timeout: 30000,
+  },
+
+  // Puppeteer MCP - Web navigation and automation
+  puppeteer: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-puppeteer'],
+    description: `Puppeteer MCP server - Navigate websites, take screenshots, and interact with web pages.
+Makes a significant difference in UI testing and automation workflows.
+Capabilities: web scraping, screenshot capture, page interaction.`,
+    trust: false,
+    timeout: 60000,
+  },
+
+  // Memory Bank MCP - Project knowledge organization
+  'memory-bank': {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-memory'],
+    description: `Memory Bank MCP - Organizes project knowledge hierarchically for complex projects.
+A must-have for complex projects - helps AI better understand your project structure and goals.
+Automates creation and maintenance of project memory banks.`,
+    trust: false,
+    timeout: 30000,
+  },
+
+  // Knowledge Graph Memory MCP - Context retention across sessions
+  'knowledge-graph': {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-knowledge-graph'],
+    description: `Knowledge Graph Memory MCP - Maintains project context across sessions.
+Crucial for preventing repetition and ensuring AI retains key project details.
+Creates a persistent knowledge graph of your project's context.`,
+    trust: false,
+    timeout: 30000,
+  },
+
+  // DuckDuckGo MCP - Lightweight web search (no API key required)
+  duckduckgo: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-duckduckgo'],
+    description: `DuckDuckGo MCP - Lightweight web search without requiring an API key.
+Access current documentation, error solutions, and up-to-date information.
+Perfect for quick searches without leaving your development environment.`,
+    trust: false,
+    timeout: 30000,
+  },
+
+  // MCP Compass - Navigate the MCP ecosystem
+  compass: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-compass'],
+    description: `MCP Compass - Your guide through the growing MCP ecosystem.
+Helps you discover the right MCP tools for specific tasks using natural language.
+Essential for exploring and finding new MCP capabilities.`,
+    trust: false,
+    timeout: 30000,
+  },
+
+  // Filesystem MCP - Safe filesystem access with explicit permissions
+  filesystem: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-filesystem', process.cwd()],
+    description: `Filesystem MCP - Read and write files with explicit permission control.
+Capabilities: read files, write files, create directories, list directory contents.
+Essential for file operations. Requires user approval for each operation unless trusted.`,
+    trust: false,
+    timeout: 30000,
+  },
+
+  // Brave Search MCP - Web search with Brave Search API
+  'brave-search': {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-brave-search'],
+    description: `Brave Search MCP - Search the web using Brave Search API.
+Capabilities: web search, news search, image search with privacy-focused results.
+Requires BRAVE_API_KEY environment variable (get free key at brave.com/search/api).`,
+    trust: false,
+    timeout: 30000,
+    env: {
+      BRAVE_API_KEY: '${BRAVE_API_KEY}',
+    },
+  },
+
+  // Fetch MCP - HTTP requests and web content fetching
+  fetch: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-fetch'],
+    description: `Fetch MCP - Make HTTP requests and fetch web content.
+Capabilities: GET/POST requests, fetch HTML, download content, API calls.
+Essential for web scraping and API integration.`,
+    trust: false,
+    timeout: 60000,
+  },
+
+  // PostgreSQL MCP - Database operations
+  postgres: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-postgres'],
+    description: `PostgreSQL MCP - Query and manage PostgreSQL databases.
+Capabilities: execute SQL queries, read schemas, manage data.
+Requires DATABASE_URL environment variable.
+Use with caution - can modify database data.`,
+    trust: false,
+    timeout: 30000,
+    env: {
+      DATABASE_URL: '${DATABASE_URL}',
+    },
+  },
+
+  // Sqlite MCP - Local database operations
+  sqlite: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-sqlite'],
+    description: `SQLite MCP - Query and manage SQLite databases.
+Capabilities: execute SQL queries, read schemas, manage local databases.
+Perfect for local development and testing.`,
+    trust: false,
+    timeout: 30000,
+  },
+
+  // Google Drive MCP - Access Google Drive files
+  'google-drive': {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-gdrive'],
+    description: `Google Drive MCP - Read and search Google Drive files.
+Capabilities: search files, read documents, access spreadsheets.
+Requires Google OAuth authentication (will prompt on first use).`,
+    trust: false,
+    timeout: 30000,
+  },
+
+  // Slack MCP - Slack workspace integration
+  slack: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-slack'],
+    description: `Slack MCP - Send messages and interact with Slack.
+Capabilities: send messages, read channels, post updates.
+Requires SLACK_BOT_TOKEN and SLACK_TEAM_ID environment variables.`,
+    trust: false,
+    timeout: 30000,
+    env: {
+      SLACK_BOT_TOKEN: '${SLACK_BOT_TOKEN}',
+      SLACK_TEAM_ID: '${SLACK_TEAM_ID}',
+    },
+  },
+
+  // ==================== REMOTE MCP SERVERS ====================
+  
+  // GitMCP - Remote GitHub repository context (dynamic endpoint)
+  'gitmcp-docs': {
+    command: 'npx',
+    args: ['-y', 'mcp-remote', 'https://gitmcp.io/docs'],
+    description: `GitMCP Dynamic - Access any GitHub repository's context on demand.
+AI can fetch documentation, search code, and understand any public GitHub project.
+No need to configure specific repositories - AI picks them dynamically.
+Example: Ask "How does the LangGraph memory work?" and AI will fetch it.`,
+    trust: false,
+    timeout: 30000,
+  },
+};
+
+/**
+ * Get the default MCP servers configuration.
+ * This returns a clean copy ready to be merged into settings.
+ */
+export function getDefaultMcpServers(): Record<string, MCPServerConfig> {
+  // Return a deep copy to avoid mutation
+  return JSON.parse(JSON.stringify(DEFAULT_MCP_SERVERS));
+}
+
+/**
+ * Get a subset of essential MCP servers for first-time setup.
+ * These are the most critical servers that should be enabled by default.
+ * Servers requiring API keys are excluded from essentials.
+ */
+export function getEssentialMcpServers(): Record<string, MCPServerConfig> {
+  return {
+    git: DEFAULT_MCP_SERVERS.git,
+    github: DEFAULT_MCP_SERVERS.github,
+    filesystem: DEFAULT_MCP_SERVERS.filesystem,
+    fetch: DEFAULT_MCP_SERVERS.fetch,
+    playwright: DEFAULT_MCP_SERVERS.playwright,
+    duckduckgo: DEFAULT_MCP_SERVERS.duckduckgo,
+    'gitmcp-docs': DEFAULT_MCP_SERVERS['gitmcp-docs'],
+  };
+}
+
+/**
+ * Get MCP server names organized by category.
+ */
+export const MCP_SERVER_CATEGORIES = {
+  // Core functionality - enabled by default
+  essential: ['git', 'github', 'filesystem', 'fetch', 'duckduckgo', 'gitmcp-docs'],
+  
+  // Browser automation
+  automation: ['playwright', 'puppeteer'],
+  
+  // Problem-solving and reasoning
+  'problem-solving': ['sequential-thinking'],
+  
+  // Memory and context management
+  memory: ['memory-bank', 'knowledge-graph'],
+  
+  // Search and discovery
+  search: ['brave-search', 'compass'],
+  
+  // Database operations (require credentials)
+  database: ['postgres', 'sqlite'],
+  
+  // External integrations (require credentials)
+  integrations: ['google-drive', 'slack'],
+  
+  // Remote services
+  remote: ['gitmcp-docs'],
+} as const;
+
+/**
+ * Get a list of server names that require API keys/credentials.
+ * These are disabled by default but can be enabled by setting env vars.
+ */
+export function getServersRequiringCredentials(): string[] {
+  return ['brave-search', 'postgres', 'google-drive', 'slack'];
+}
+
+/**
+ * Get a list of server names that are optional and disabled by default.
+ * These can be enabled manually by users if needed.
+ */
+export function getOptionalMcpServers(): string[] {
+  return [
+    'memory-bank',
+    'knowledge-graph',
+    'compass',
+    'brave-search',
+    'postgres',
+    'sqlite',
+    'google-drive',
+    'slack',
+  ];
+}
+
+/**
+ * Check if npx and npm are available on the system.
+ */
+export async function checkNpmAvailability(): Promise<boolean> {
+  try {
+    const { execSync } = await import('child_process');
+    execSync('npx --version', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get setup instructions for servers requiring credentials.
+ */
+export const MCP_SERVER_SETUP_INSTRUCTIONS = {
+  'brave-search': {
+    envVar: 'BRAVE_API_KEY',
+    instructions: 'Get a free API key at https://brave.com/search/api/',
+    setup: 'Add to ~/.recoder-code/.env: BRAVE_API_KEY=your-key-here',
+  },
+  postgres: {
+    envVar: 'DATABASE_URL',
+    instructions: 'PostgreSQL connection string format: postgresql://user:password@host:port/database',
+    setup: 'Add to ~/.recoder-code/.env: DATABASE_URL=your-connection-string',
+  },
+  'google-drive': {
+    envVar: 'GOOGLE_OAUTH',
+    instructions: 'OAuth authentication will be prompted on first use',
+    setup: 'No manual setup required - follow OAuth flow when first used',
+  },
+  slack: {
+    envVar: 'SLACK_BOT_TOKEN, SLACK_TEAM_ID',
+    instructions: 'Create a Slack app at https://api.slack.com/apps',
+    setup: 'Add to ~/.recoder-code/.env: SLACK_BOT_TOKEN=xoxb-... and SLACK_TEAM_ID=T...',
+  },
+  github: {
+    envVar: 'GITHUB_TOKEN',
+    instructions: 'Create a personal access token at https://github.com/settings/tokens',
+    setup: 'Add to ~/.recoder-code/.env: GITHUB_TOKEN=ghp_...',
+  },
+} as const;
+
+/**
+ * Additional remote MCP servers that users can add manually.
+ * These are examples of popular remote services.
+ */
+export const AVAILABLE_REMOTE_MCP_SERVERS = {
+  // GitMCP for specific repositories
+  'gitmcp-langchain': {
+    command: 'npx',
+    args: ['-y', 'mcp-remote', 'https://gitmcp.io/langchain-ai/langgraph'],
+    description: 'GitMCP for LangGraph - Direct access to LangGraph documentation',
+  },
+  'gitmcp-playwright': {
+    command: 'npx',
+    args: ['-y', 'mcp-remote', 'https://gitmcp.io/microsoft/playwright'],
+    description: 'GitMCP for Playwright - Direct access to Playwright documentation',
+  },
+  'gitmcp-react': {
+    command: 'npx',
+    args: ['-y', 'mcp-remote', 'https://gitmcp.io/facebook/react'],
+    description: 'GitMCP for React - Direct access to React documentation',
+  },
+  'gitmcp-nextjs': {
+    command: 'npx',
+    args: ['-y', 'mcp-remote', 'https://gitmcp.io/vercel/next.js'],
+    description: 'GitMCP for Next.js - Direct access to Next.js documentation',
+  },
+} as const;

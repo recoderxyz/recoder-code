@@ -1,0 +1,57 @@
+/**
+ * @license
+ * Copyright 2025 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { AuthType, type Config } from 'recoder-code-core';
+import { USER_SETTINGS_PATH } from './config/settings.js';
+import { validateAuthMethod } from './config/auth.js';
+
+function getAuthTypeFromEnv(): AuthType | undefined {
+  // OpenRouter is the PRIMARY default - check first
+  if (process.env['OPENROUTER_API_KEY']) {
+    return AuthType.USE_OPENAI;
+  }
+  if (process.env['GOOGLE_GENAI_USE_GCA'] === 'true') {
+    return AuthType.LOGIN_WITH_GOOGLE;
+  }
+  if (process.env['GOOGLE_GENAI_USE_VERTEXAI'] === 'true') {
+    return AuthType.USE_VERTEX_AI;
+  }
+  if (process.env['GEMINI_API_KEY']) {
+    return AuthType.USE_GEMINI;
+  }
+  if (process.env['OPENAI_API_KEY']) {
+    return AuthType.USE_OPENAI;
+  }
+  return undefined;
+}
+
+export async function validateNonInteractiveAuth(
+  configuredAuthType: AuthType | undefined,
+  useExternalAuth: boolean | undefined,
+  nonInteractiveConfig: Config,
+) {
+  const effectiveAuthType = configuredAuthType || getAuthTypeFromEnv();
+
+  if (!effectiveAuthType) {
+    console.error(
+      `Please set OPENROUTER_API_KEY (recommended) or configure auth in ${USER_SETTINGS_PATH}.\n` +
+      `Get your free API key at: https://openrouter.ai/keys\n\n` +
+      `Other options: OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY`,
+    );
+    process.exit(1);
+  }
+
+  if (!useExternalAuth) {
+    const err = validateAuthMethod(effectiveAuthType);
+    if (err != null) {
+      console.error(err);
+      process.exit(1);
+    }
+  }
+
+  await nonInteractiveConfig.refreshAuth(effectiveAuthType);
+  return nonInteractiveConfig;
+}

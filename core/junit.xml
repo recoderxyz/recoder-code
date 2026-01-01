@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="29" failures="0" errors="0" time="0.028155792">
+    <testsuite name="src/tools/memoryTool.test.ts" timestamp="2025-10-20T17:15:35.434Z" hostname="Arhan-MacBook-Air.local" tests="29" failures="0" errors="0" skipped="0" time="0.028155792">
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; setGeminiMdFilename &gt; should update currentGeminiMdFilename when a valid new name is provided" time="0.00103275">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; setGeminiMdFilename &gt; should not update currentGeminiMdFilename if the new name is empty or whitespace" time="0.000122792">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; setGeminiMdFilename &gt; should handle an array of filenames" time="0.000459875">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; performAddMemoryEntry (static method) &gt; should create section and save a fact if file does not exist" time="0.000979458">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; performAddMemoryEntry (static method) &gt; should create section and save a fact if file is empty" time="0.000131709">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; performAddMemoryEntry (static method) &gt; should add a fact to an existing section" time="0.000112542">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; performAddMemoryEntry (static method) &gt; should add a fact to an existing empty section" time="0.000093125">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; performAddMemoryEntry (static method) &gt; should add a fact when other ## sections exist and preserve spacing" time="0.000111916">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; performAddMemoryEntry (static method) &gt; should correctly trim and add a fact that starts with a dash" time="0.000110375">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; performAddMemoryEntry (static method) &gt; should handle error from fsAdapter.writeFile" time="0.004320125">
+            <system-err>
+[MemoryTool] Error adding memory entry to /mock/home/.qwen/RECODER.md: Error: Disk full
+    at [90m/Users/arhansubasi/claude-code/recoder-code/packages/core/[39msrc/tools/memoryTool.test.ts:185:49
+    at file:///Users/arhansubasi/claude-code/recoder-code/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/arhansubasi/claude-code/recoder-code/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/arhansubasi/claude-code/recoder-code/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (&lt;anonymous&gt;)
+    at runWithTimeout (file:///Users/arhansubasi/claude-code/recoder-code/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///Users/arhansubasi/claude-code/recoder-code/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1574:12)
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite (file:///Users/arhansubasi/claude-code/recoder-code/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1729:8)
+    at runSuite (file:///Users/arhansubasi/claude-code/recoder-code/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1729:8)
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; execute (instance method) &gt; should have correct name, displayName, description, and schema" time="0.000289625">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; execute (instance method) &gt; should call performAddMemoryEntry with correct parameters and return success for global scope" time="0.015860583">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; execute (instance method) &gt; should call performAddMemoryEntry with correct parameters and return success for project scope" time="0.000217834">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; execute (instance method) &gt; should return an error if fact is empty" time="0.0001455">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; execute (instance method) &gt; should handle errors from performAddMemoryEntry" time="0.000281041">
+            <system-err>
+[MemoryTool] Error executing save_memory for fact &quot;This will fail&quot; in global: [MemoryTool] Failed to add memory entry: Disk full
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; execute (instance method) &gt; should return error when executing without scope parameter" time="0.000144917">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should return confirmation details when memory file is not allowlisted for global scope" time="0.001092875">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should return confirmation details when memory file is not allowlisted for project scope" time="0.000249083">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should return false when memory file is already allowlisted for global scope" time="0.0000965">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should return false when memory file is already allowlisted for project scope" time="0.000078458">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should add memory file to allowlist when ProceedAlways is confirmed for global scope" time="0.00016725">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should add memory file to allowlist when ProceedAlways is confirmed for project scope" time="0.000183791">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should not add memory file to allowlist when other outcomes are confirmed" time="0.000146167">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should handle existing memory file with content for global scope" time="0.000242834">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should prompt for scope selection when scope is not specified" time="0.000206375">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; shouldConfirmExecute &gt; should show correct file paths in scope selection prompt" time="0.000164125">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; getDescription &gt; should return correct description for global scope" time="0.000108667">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; getDescription &gt; should return correct description for project scope" time="0.000068708">
+        </testcase>
+        <testcase classname="src/tools/memoryTool.test.ts" name="MemoryTool &gt; getDescription &gt; should show choice prompt when scope is not specified" time="0.000075334">
+        </testcase>
+    </testsuite>
+</testsuites>

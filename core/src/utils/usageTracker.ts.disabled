@@ -1,0 +1,276 @@
+/**
+ * Usage Tracking Service
+ * Tracks API usage locally and syncs to recoder.xyz backend
+ */
+
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+export type RequestType = 'chat' | 'completion' | 'embedding' | 'edit';
+export type ApiKeySource = 'user' | 'platform';
+
+export interface UsageRecord {
+  id: string;
+  requestType: RequestType;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  timestamp: Date;
+  apiKeySource: ApiKeySource;
+  costUsd?: number; // Only for platform keys
+}
+
+export interface UsageSummary {
+  totalRequests: number;
+  totalTokens: number;
+  totalCost: number;
+  byModel: Record<string, {
+    requests: number;
+    tokens: number;
+    cost: number;
+  }>;
+  bySource: {
+    user: { requests: number; tokens: number };
+    platform: { requests: number; tokens: number; cost: number };
+  };
+}
+
+export class UsageTracker {
+  private usageFilePath: string;
+  private usageCache: UsageRecord[] | null = null;
+  private syncInterval: NodeJS.Timeout | null = null;
+  private readonly AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+  constructor() {
+    const homeDir = os.homedir();
+    const recoderDir = path.join(homeDir, '.recoder');
+    this.usageFilePath = path.join(recoderDir, 'usage.json');
+  }
+
+  /**
+   * Track a new API request
+   */
+  async trackRequest(record: Omit<UsageRecord, 'id' | 'timestamp'>): Promise<void> {
+    const fullRecord: UsageRecord = {
+      ...record,
+      id: this.generateId(),
+      timestamp: new Date(),
+    };
+
+    // Load existing records
+    const records = await this.loadLocalUsage();
+    records.push(fullRecord);
+
+    // Save to file
+    await this.saveLocalUsage(records);
+
+    // Update cache
+    this.usageCache = records;
+
+    // Try to sync to backend (non-blocking)
+    this.syncToBackend().catch((error) => {
+      console.warn('Failed to sync usage to backend:', error.message);
+    });
+  }
+
+  /**
+   * Get local usage records
+   */
+  async getLocalUsage(since?: Date): Promise<UsageRecord[]> {
+    if (!this.usageCache) {
+      this.usageCache = await this.loadLocalUsage();
+    }
+
+    if (since) {
+      return this.usageCache.filter((record) => record.timestamp >= since);
+    }
+
+    return this.usageCache;
+  }
+
+  /**
+   * Get usage summary
+   */
+  async getUsageSummary(since?: Date): Promise<UsageSummary> {
+    const records = await this.getLocalUsage(since);
+
+    const summary: UsageSummary = {
+      totalRequests: records.length,
+      totalTokens: 0,
+      totalCost: 0,
+      byModel: {},
+      bySource: {
+        user: { requests: 0, tokens: 0 },
+        platform: { requests: 0, tokens: 0, cost: 0 },
+      },
+    };
+
+    for (const record of records) {
+      // Total tokens
+      summary.totalTokens += record.totalTokens;
+
+      // Total cost
+      if (record.costUsd) {
+        summary.totalCost += record.costUsd;
+      }
+
+      // By model
+      if (!summary.byModel[record.model]) {
+        summary.byModel[record.model] = { requests: 0, tokens: 0, cost: 0 };
+      }
+      summary.byModel[record.model].requests++;
+      summary.byModel[record.model].tokens += record.totalTokens;
+      if (record.costUsd) {
+        summary.byModel[record.model].cost += record.costUsd;
+      }
+
+      // By source
+      summary.bySource[record.apiKeySource].requests++;
+      summary.bySource[record.apiKeySource].tokens += record.totalTokens;
+      if (record.apiKeySource === 'platform' && record.costUsd) {
+        summary.bySource.platform.cost += record.costUsd;
+      }
+    }
+
+    return summary;
+  }
+
+  /**
+   * Sync local usage to backend
+   */
+  async syncToBackend(): Promise<void> {
+    // Check if user is authenticated with recoder.xyz
+    const { RecoderAuthService } = await import(
+      '../../../cli/src/services/RecoderAuthService.js'
+    );
+    const authService = new RecoderAuthService();
+
+    const isAuthenticated = await authService.isAuthenticated();
+    if (!isAuthenticated) {
+      // Skip sync if not authenticated with recoder
+      return;
+    }
+
+    const token = await authService.getAccessToken();
+    if (!token) {
+      return;
+    }
+
+    // Get unsynced records (last 24 hours)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const records = await this.getLocalUsage(oneDayAgo);
+
+    if (records.length === 0) {
+      return;
+    }
+
+    // Send to backend
+    const RECODER_API_BASE = process.env['RECODER_API_URL'] || 'https://recoder.xyz';
+
+    try {
+      const response = await fetch(`${RECODER_API_BASE}/api/usage/track`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ records }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Backend sync failed: ${response.statusText}`);
+      }
+    } catch (error) {
+      // Don't throw - just log the error
+      console.warn('Failed to sync usage to backend:', error);
+    }
+  }
+
+  /**
+   * Start automatic syncing to backend
+   */
+  startAutoSync(): void {
+    if (this.syncInterval) {
+      return; // Already started
+    }
+
+    this.syncInterval = setInterval(() => {
+      this.syncToBackend().catch((error) => {
+        console.warn('Auto-sync failed:', error.message);
+      });
+    }, this.AUTO_SYNC_INTERVAL_MS);
+  }
+
+  /**
+   * Stop automatic syncing
+   */
+  stopAutoSync(): void {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+  }
+
+  /**
+   * Clear old usage records (older than 30 days)
+   */
+  async clearOldRecords(): Promise<void> {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const records = await this.loadLocalUsage();
+
+    const filteredRecords = records.filter(
+      (record) => record.timestamp >= thirtyDaysAgo,
+    );
+
+    await this.saveLocalUsage(filteredRecords);
+    this.usageCache = filteredRecords;
+  }
+
+  // Private helper methods
+
+  private async loadLocalUsage(): Promise<UsageRecord[]> {
+    try {
+      const content = await fs.readFile(this.usageFilePath, 'utf-8');
+      const records = JSON.parse(content);
+
+      // Convert timestamp strings back to Date objects
+      return records.map((record: any) => ({
+        ...record,
+        timestamp: new Date(record.timestamp),
+      }));
+    } catch (error) {
+      // File doesn't exist or is invalid - return empty array
+      return [];
+    }
+  }
+
+  private async saveLocalUsage(records: UsageRecord[]): Promise<void> {
+    // Ensure directory exists
+    const dir = path.dirname(this.usageFilePath);
+    await fs.mkdir(dir, { recursive: true });
+
+    // Write records
+    await fs.writeFile(
+      this.usageFilePath,
+      JSON.stringify(records, null, 2),
+      { mode: 0o600 }, // Read/write for owner only
+    );
+  }
+
+  private generateId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  }
+}
+
+// Singleton instance
+let usageTrackerInstance: UsageTracker | null = null;
+
+export function getUsageTracker(): UsageTracker {
+  if (!usageTrackerInstance) {
+    usageTrackerInstance = new UsageTracker();
+    usageTrackerInstance.startAutoSync();
+  }
+  return usageTrackerInstance;
+}

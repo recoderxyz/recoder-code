@@ -1,0 +1,180 @@
+/**
+ * API Key Routing Service
+ * Determines which API key to use based on user subscription tier
+ */
+
+import type { ApiKeySource } from './usageTracker.js';
+
+export interface ApiKeyInfo {
+  apiKey: string;
+  source: ApiKeySource;
+  baseUrl?: string;
+  model?: string;
+}
+
+export class ApiKeyRouter {
+  private platformKeyCache: string | null = null;
+  private cacheExpiry: number = 0;
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+  /**
+   * Get the appropriate API key for the current user
+   */
+  async getApiKey(): Promise<ApiKeyInfo> {
+    // Check if user is authenticated with recoder.xyz
+    const { RecoderAuthService } = await import(
+      '../../../cli/src/services/RecoderAuthService.js'
+    );
+    const authService = new RecoderAuthService();
+
+    const isAuthenticated = await authService.isAuthenticated();
+
+    if (!isAuthenticated) {
+      // User is not authenticated with recoder.xyz
+      // Use local OpenRouter API key
+      return this.getLocalApiKey();
+    }
+
+    // User is authenticated - check their subscription plan
+    const user = await authService.getUser();
+
+    if (!user) {
+      // Shouldn't happen, but fall back to local key
+      return this.getLocalApiKey();
+    }
+
+    if (user.subscription_plan === 'free') {
+      // Free users must use their own API key
+      if (!user.has_own_api_key) {
+        throw new Error(
+          'Free tier requires your own OpenRouter API key. ' +
+          'Please add your key by running: recoder /auth',
+        );
+      }
+      return this.getLocalApiKey();
+    } else {
+      // Pro and Enterprise users use platform keys
+      return this.getPlatformApiKey();
+    }
+  }
+
+  /**
+   * Get local API key from environment
+   */
+  private getLocalApiKey(): ApiKeyInfo {
+    const apiKey = process.env['OPENAI_API_KEY'];
+    const baseUrl = process.env['OPENAI_BASE_URL'] || 'https://openrouter.ai/api/v1';
+    const model = process.env['OPENAI_MODEL'];
+
+    if (!apiKey) {
+      throw new Error(
+        'OpenRouter API key not found. Please set OPENAI_API_KEY environment variable ' +
+        'or run: recoder /auth',
+      );
+    }
+
+    return {
+      apiKey,
+      baseUrl,
+      model,
+      source: 'user',
+    };
+  }
+
+  /**
+   * Get platform API key from backend (for Pro/Enterprise users)
+   */
+  private async getPlatformApiKey(): Promise<ApiKeyInfo> {
+    // Check cache first
+    if (this.platformKeyCache && Date.now() < this.cacheExpiry) {
+      return {
+        apiKey: this.platformKeyCache,
+        baseUrl: 'https://openrouter.ai/api/v1',
+        source: 'platform',
+      };
+    }
+
+    const { RecoderAuthService } = await import(
+      '../../../cli/src/services/RecoderAuthService.js'
+    );
+    const authService = new RecoderAuthService();
+
+    const RECODER_API_BASE = process.env['RECODER_API_URL'] || 'https://recoder.xyz';
+    const token = await authService.getAccessToken();
+
+    if (!token) {
+      throw new Error('No access token available');
+    }
+
+    const response = await fetch(`${RECODER_API_BASE}/api/keys/platform`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch platform API key: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.apiKey) {
+      throw new Error('No API key returned from platform');
+    }
+
+    // Cache the key
+    this.platformKeyCache = data.apiKey;
+    this.cacheExpiry = Date.now() + this.CACHE_TTL_MS;
+
+    return {
+      apiKey: data.apiKey,
+      baseUrl: data.baseUrl || 'https://openrouter.ai/api/v1',
+      model: data.model,
+      source: 'platform',
+    };
+  }
+
+  /**
+   * Clear cached platform key (force refresh on next request)
+   */
+  clearCache(): void {
+    this.platformKeyCache = null;
+    this.cacheExpiry = 0;
+  }
+
+  /**
+   * Determine if user should use platform keys
+   */
+  async shouldUsePlatformKeys(): Promise<boolean> {
+    try {
+      const { RecoderAuthService } = await import(
+        '../../../cli/src/services/RecoderAuthService.js'
+      );
+      const authService = new RecoderAuthService();
+
+      const isAuthenticated = await authService.isAuthenticated();
+      if (!isAuthenticated) {
+        return false;
+      }
+
+      const user = await authService.getUser();
+      if (!user) {
+        return false;
+      }
+
+      return user.subscription_plan === 'pro' || user.subscription_plan === 'enterprise';
+    } catch {
+      return false;
+    }
+  }
+}
+
+// Singleton instance
+let apiKeyRouterInstance: ApiKeyRouter | null = null;
+
+export function getApiKeyRouter(): ApiKeyRouter {
+  if (!apiKeyRouterInstance) {
+    apiKeyRouterInstance = new ApiKeyRouter();
+  }
+  return apiKeyRouterInstance;
+}

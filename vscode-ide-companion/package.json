@@ -1,0 +1,302 @@
+{
+  "name": "recoder-code-vscode-companion",
+  "displayName": "Recoder Code",
+  "description": "AI-powered coding assistant with 12+ providers: OpenRouter, OpenAI, Anthropic, Ollama, LM Studio, Groq, DeepSeek, Mistral, and more. Free tier available.",
+  "version": "1.0.0",
+  "publisher": "recoder",
+  "author": {
+    "name": "Recoder",
+    "url": "https://recoder.xyz"
+  },
+  "icon": "assets/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/recoderxyz/recoder-code.git",
+    "directory": "packages/vscode-ide-companion"
+  },
+  "bugs": {
+    "url": "https://github.com/recoderxyz/recoder-code/issues"
+  },
+  "homepage": "https://recoder.xyz",
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "license": "LICENSE",
+  "preview": true,
+  "categories": [
+    "AI"
+  ],
+  "keywords": [
+    "recoder",
+    "recoder-code",
+    "ai",
+    "ai coding",
+    "code generation",
+    "openrouter",
+    "ollama",
+    "anthropic",
+    "claude",
+    "openai",
+    "gpt",
+    "groq",
+    "deepseek",
+    "mistral",
+    "lm studio",
+    "local ai",
+    "copilot alternative",
+    "cursor alternative",
+    "free ai coding"
+  ],
+  "sponsor": {
+    "url": "https://recoder.xyz"
+  },
+  "qna": "https://github.com/recoderxyz/recoder-code/discussions",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "recoder-diff-editable"
+      }
+    ],
+    "commands": [
+      {
+        "command": "recoder.diff.accept",
+        "title": "Recoder Code: Accept Current Diff",
+        "icon": "$(check)"
+      },
+      {
+        "command": "recoder.diff.cancel",
+        "title": "Recoder Code: Close Diff Editor",
+        "icon": "$(close)"
+      },
+      {
+        "command": "recoder-code.runRecoder",
+        "title": "Recoder Code: Run"
+      },
+      {
+        "command": "recoder-code.showNotices",
+        "title": "Recoder Code: View Third-Party Notices"
+      },
+      {
+        "command": "recoder.auth.login",
+        "title": "Recoder Code: Login",
+        "icon": "$(sign-in)"
+      },
+      {
+        "command": "recoder.auth.logout",
+        "title": "Recoder Code: Logout",
+        "icon": "$(sign-out)"
+      },
+      {
+        "command": "recoder.auth.status",
+        "title": "Recoder Code: Show Auth Status"
+      },
+      {
+        "command": "recoder.auth.setApiKey",
+        "title": "Recoder Code: Set OpenRouter API Key",
+        "icon": "$(key)"
+      },
+      {
+        "command": "recoder.models.browse",
+        "title": "Recoder Code: Browse Models",
+        "icon": "$(library)"
+      },
+      {
+        "command": "recoder.models.select",
+        "title": "Recoder Code: Select Model"
+      },
+      {
+        "command": "recoder.models.compare",
+        "title": "Recoder Code: Compare Models"
+      },
+      {
+        "command": "recoder.chat.open",
+        "title": "Recoder Code: Open Chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "recoder.openrouter.credits",
+        "title": "Recoder Code: Show OpenRouter Credits"
+      },
+      {
+        "command": "recoder.openrouter.estimate",
+        "title": "Recoder Code: Estimate Cost"
+      },
+      {
+        "command": "recoder.openrouter.activity",
+        "title": "Recoder Code: Show Activity"
+      },
+      {
+        "command": "recoder.code.explain",
+        "title": "Recoder Code: Explain This"
+      },
+      {
+        "command": "recoder.code.refactor",
+        "title": "Recoder Code: Refactor This"
+      },
+      {
+        "command": "recoder.code.addComments",
+        "title": "Recoder Code: Add Comments"
+      },
+      {
+        "command": "recoder.code.generateTests",
+        "title": "Recoder Code: Generate Tests"
+      },
+      {
+        "command": "recoder.providers.list",
+        "title": "Recoder Code: List All Providers",
+        "icon": "$(server)"
+      },
+      {
+        "command": "recoder.providers.detectLocal",
+        "title": "Recoder Code: Detect Local AI (Ollama, LM Studio)",
+        "icon": "$(search)"
+      },
+      {
+        "command": "recoder.providers.configure",
+        "title": "Recoder Code: Configure Provider API Key",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "recoder.openWebsite",
+        "title": "Recoder Code: Open Website"
+      },
+      {
+        "command": "recoder.openTwitter",
+        "title": "Recoder Code: Follow on Twitter"
+      },
+      {
+        "command": "recoder.openGitHub",
+        "title": "Recoder Code: Star on GitHub"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "recoder-code",
+          "title": "Recoder Code",
+          "icon": "assets/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "recoder-code": [
+        {
+          "id": "recoder.authStatus",
+          "name": "Authentication"
+        },
+        {
+          "id": "recoder.providers",
+          "name": "Providers"
+        },
+        {
+          "id": "recoder.models",
+          "name": "Models"
+        },
+        {
+          "id": "recoder.usage",
+          "name": "Usage & Credits"
+        }
+      ]
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "recoder.diff.accept",
+          "when": "recoder.diff.isVisible"
+        },
+        {
+          "command": "recoder.diff.cancel",
+          "when": "recoder.diff.isVisible"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "recoder.diff.accept",
+          "when": "recoder.diff.isVisible",
+          "group": "navigation"
+        },
+        {
+          "command": "recoder.diff.cancel",
+          "when": "recoder.diff.isVisible",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "recoder.code.explain",
+          "when": "editorHasSelection",
+          "group": "recoder@1"
+        },
+        {
+          "command": "recoder.code.refactor",
+          "when": "editorHasSelection",
+          "group": "recoder@2"
+        },
+        {
+          "command": "recoder.code.addComments",
+          "when": "editorHasSelection",
+          "group": "recoder@3"
+        },
+        {
+          "command": "recoder.code.generateTests",
+          "when": "editorHasSelection",
+          "group": "recoder@4"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "recoder.diff.accept",
+        "key": "ctrl+s",
+        "when": "recoder.diff.isVisible"
+      },
+      {
+        "command": "recoder.diff.accept",
+        "key": "cmd+s",
+        "when": "recoder.diff.isVisible"
+      }
+    ]
+  },
+  "main": "./dist/extension.cjs",
+  "type": "module",
+  "scripts": {
+    "vscode:prepublish": "npm run generate:notices && npm run check-types && npm run lint && node esbuild.js --production",
+    "build": "npm run compile",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "vsce package --no-dependencies",
+    "generate:notices": "node ./scripts/generate-notices.js",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "test:ci": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.105.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "@vitest/ui": "^3.2.4",
+    "esbuild": "^0.25.3",
+    "eslint": "^9.25.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "openai": "^5.21.0",
+    "open": "^10.1.0",
+    "recoder-code-core": "*",
+    "zod": "^3.25.76"
+  }
+}
