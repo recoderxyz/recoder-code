@@ -29,6 +29,18 @@ import { addCommentsCommand } from './commands/code/addCommentsCommand.js';
 import { generateTestsCommand } from './commands/code/generateTestsCommand.js';
 import { ProviderService } from './services/ProviderService.js';
 import { registerProviderCommands } from './commands/providers/providerCommands.js';
+import { SettingsPanel } from './webviews/SettingsPanel.js';
+import { RecoderCodeLensProvider } from './providers/CodeLensProvider.js';
+import { registerCodeLensCommands } from './commands/codelens/codeLensCommands.js';
+import { GhostProvider, registerGhostCommands } from './providers/GhostProvider.js';
+import { 
+  AuthStatusViewProvider, 
+  ModelSelectorViewProvider, 
+  ProvidersViewProvider, 
+  ChatHistoryViewProvider, 
+  QuickActionsViewProvider,
+  registerSidebarCommands 
+} from './views/SidebarProvider.js';
 
 const INFO_MESSAGE_SHOWN_KEY = 'recoderCodeInfoMessageShown';
 export const DIFF_SCHEME = 'recoder-diff';
@@ -58,6 +70,78 @@ export async function activate(context: vscode.ExtensionContext) {
   vscode.window.registerTreeDataProvider('recoder.authStatus', authStatusProvider);
   vscode.window.registerTreeDataProvider('recoder.models', modelBrowserProvider);
   vscode.window.registerTreeDataProvider('recoder.usage', usageProvider);
+
+  // Register CodeLens provider for supported languages
+  const codeLensProvider = new RecoderCodeLensProvider();
+  const codeLensLanguages = [
+    'typescript', 'typescriptreact', 
+    'javascript', 'javascriptreact',
+    'python', 'java', 'csharp', 'go', 'rust', 'ruby', 'php',
+    'c', 'cpp', 'swift', 'kotlin', 'scala'
+  ];
+  
+  context.subscriptions.push(
+    vscode.languages.registerCodeLensProvider(
+      codeLensLanguages.map(lang => ({ language: lang })),
+      codeLensProvider
+    )
+  );
+  log('CodeLens provider registered for languages: ' + codeLensLanguages.join(', '));
+
+  // Register CodeLens commands
+  context.subscriptions.push(...registerCodeLensCommands(context));
+  log('CodeLens commands registered');
+
+  // Register Ghost Provider (Inline Suggestions)
+  const ghostProvider = new GhostProvider(providerService, authService, context);
+  context.subscriptions.push(
+    vscode.languages.registerInlineCompletionItemProvider(
+      { pattern: '**' }, // All files
+      ghostProvider
+    )
+  );
+  context.subscriptions.push(...registerGhostCommands(context, ghostProvider));
+  log('Ghost provider (inline suggestions) registered');
+
+  // Register enhanced sidebar views
+  const sidebarAuthStatusView = new AuthStatusViewProvider(authService, context);
+  const modelSelectorView = new ModelSelectorViewProvider(providerService, context);
+  const providersView = new ProvidersViewProvider(providerService, context);
+  const chatHistoryView = new ChatHistoryViewProvider(context, authService);
+  const quickActionsView = new QuickActionsViewProvider();
+
+  vscode.window.registerTreeDataProvider('recoder.sidebarAuth', sidebarAuthStatusView);
+  vscode.window.registerTreeDataProvider('recoder.modelSelector', modelSelectorView);
+  vscode.window.registerTreeDataProvider('recoder.providers', providersView);
+  vscode.window.registerTreeDataProvider('recoder.chatHistory', chatHistoryView);
+  vscode.window.registerTreeDataProvider('recoder.quickActions', quickActionsView);
+  log('Enhanced sidebar views registered');
+
+  // Register sidebar commands
+  context.subscriptions.push(...registerSidebarCommands(context, providerService));
+  
+  // Register sidebar refresh commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('recoder.sidebarAuth.refresh', () => sidebarAuthStatusView.refresh()),
+    vscode.commands.registerCommand('recoder.modelSelector.refresh', () => modelSelectorView.refresh()),
+    vscode.commands.registerCommand('recoder.providers.refresh', () => providersView.refresh()),
+    vscode.commands.registerCommand('recoder.chatHistory.refresh', () => chatHistoryView.refresh()),
+    vscode.commands.registerCommand('recoder.chatHistory.syncNow', async () => {
+      const syncService = chatHistoryView.getSyncService();
+      const result = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Syncing chat history...' },
+        async () => syncService.syncAll()
+      );
+      if (result.synced > 0 || result.failed > 0) {
+        vscode.window.showInformationMessage(
+          `Chat sync complete: ${result.synced} synced, ${result.failed} failed`
+        );
+      }
+      chatHistoryView.refresh();
+    }),
+    vscode.commands.registerCommand('recoder.quickActions.refresh', () => quickActionsView.refresh())
+  );
+  log('Sidebar commands registered');
 
   // Register refresh commands
   context.subscriptions.push(
@@ -112,8 +196,20 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('recoder.code.generateTests', () => generateTestsCommand(context, authService))
   );
 
+  // Register settings command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('recoder.settings.open', () => {
+      SettingsPanel.createOrShow(context);
+    }),
+    vscode.commands.registerCommand('recoder.diffTheme.configure', async () => {
+      const { DiffThemeService } = await import('./services/DiffThemeService.js');
+      const diffThemeService = new DiffThemeService(context);
+      await diffThemeService.openThemeSettings();
+    })
+  );
+
   const diffContentProvider = new DiffContentProvider();
-  const diffManager = new DiffManager(log, diffContentProvider);
+  const diffManager = new DiffManager(log, diffContentProvider, context);
 
   context.subscriptions.push(
     vscode.workspace.onDidCloseTextDocument((doc) => {

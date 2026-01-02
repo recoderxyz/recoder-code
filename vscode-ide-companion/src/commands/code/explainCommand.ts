@@ -1,11 +1,12 @@
 /**
  * Explain Code Command
- * Explains selected code using AI
+ * Explains selected code using AI with Settings UI configuration
  */
 
 import * as vscode from 'vscode';
 import type { RecoderAuthService } from '../../services/RecoderAuthService.js';
-import { OpenRouterService } from '../../services/OpenRouterService.js';
+import { ProviderService } from '../../services/ProviderService.js';
+import { AIService } from '../../services/AIService.js';
 
 export async function explainCommand(
   context: vscode.ExtensionContext,
@@ -25,23 +26,20 @@ export async function explainCommand(
     return;
   }
 
-  const isAuth = await authService.isAuthenticated();
-  if (!isAuth) {
-    vscode.window.showErrorMessage('Please login first');
-    await vscode.commands.executeCommand('recoder.auth.login');
+  // Create AI service with Settings UI configuration
+  const providerService = new ProviderService(context);
+  const aiService = new AIService(providerService);
+
+  // Check if current provider needs authentication
+  const config = providerService.getAIConfiguration();
+  const providers = providerService.getAllProviders();
+  const currentProvider = providers.find(p => p.id === config.defaultProvider);
+  
+  if (currentProvider && !currentProvider.isLocal && !providerService.hasApiKey(currentProvider)) {
+    vscode.window.showErrorMessage(`Please configure API key for ${currentProvider.name} in Settings`);
+    await vscode.commands.executeCommand('recoder.settings.open');
     return;
   }
-
-  const apiKey = await authService.getOpenRouterApiKey();
-  if (!apiKey) {
-    vscode.window.showErrorMessage('Please set your OpenRouter API key');
-    await vscode.commands.executeCommand('recoder.auth.setApiKey');
-    return;
-  }
-
-  const selectedModel =
-    context.globalState.get<string>('recoder.selectedModel') ||
-    'anthropic/claude-3.5-sonnet';
 
   const language = editor.document.languageId;
   const fileName = editor.document.fileName.split('/').pop();
@@ -50,12 +48,10 @@ export async function explainCommand(
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: 'Explaining code...',
+        title: `Explaining code using ${currentProvider?.name || config.defaultProvider}...`,
         cancellable: false,
       },
       async () => {
-        const service = new OpenRouterService(apiKey);
-
         const prompt = `Explain the following ${language} code from ${fileName}:
 
 \`\`\`${language}
@@ -67,25 +63,23 @@ Provide a clear, concise explanation covering:
 2. How it works
 3. Any important details or patterns used`;
 
-        const completion = await service.chat(selectedModel, [
+        const completion = await aiService.chat([
           { role: 'user', content: prompt },
-        ], { stream: false });
+        ]);
 
-        if ('choices' in completion) {
-          const explanation = completion.choices[0]?.message?.content || 'No explanation generated';
+        const explanation = completion.choices[0]?.message?.content || 'No explanation generated';
 
-          // Show explanation in output channel
-          const outputChannel = vscode.window.createOutputChannel('Recoder Code Explanation');
-          outputChannel.clear();
-          outputChannel.appendLine('='.repeat(80));
-          outputChannel.appendLine(`Explanation for ${fileName}`);
-          outputChannel.appendLine('='.repeat(80));
-          outputChannel.appendLine('');
-          outputChannel.appendLine(explanation);
-          outputChannel.appendLine('');
-          outputChannel.appendLine('='.repeat(80));
-          outputChannel.show();
-        }
+        // Show explanation in output channel
+        const outputChannel = vscode.window.createOutputChannel('Recoder Code Explanation');
+        outputChannel.clear();
+        outputChannel.appendLine('='.repeat(80));
+        outputChannel.appendLine(`Explanation for ${fileName} (via ${currentProvider?.name || config.defaultProvider})`);
+        outputChannel.appendLine('='.repeat(80));
+        outputChannel.appendLine('');
+        outputChannel.appendLine(explanation);
+        outputChannel.appendLine('');
+        outputChannel.appendLine('='.repeat(80));
+        outputChannel.show();
       }
     );
   } catch (error) {

@@ -2,7 +2,7 @@
 
 > AI-powered coding assistant that generates production-ready code
 
-[![npm version](https://img.shields.io/npm/v/recoder-code-cli.svg)](https://www.npmjs.com/package/recoder-code-cli)
+[![npm version](https://img.shields.io/npm/v/recoder-code.svg)](https://www.npmjs.com/package/recoder-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Installation
@@ -18,7 +18,7 @@ curl -fsSL https://recoder.xyz/api/install | bash
 
 #### npm (All platforms)
 ```bash
-npm install -g recoder-code-cli
+npm install -g recoder-code
 ```
 
 #### Homebrew (macOS/Linux)
@@ -28,12 +28,12 @@ brew install https://recoder.xyz/api/brew/recoder-code.rb
 
 #### pnpm
 ```bash
-pnpm add -g recoder-code-cli
+pnpm add -g recoder-code
 ```
 
 #### yarn
 ```bash
-yarn global add recoder-code-cli
+yarn global add recoder-code
 ```
 
 ### Manual Installation
@@ -250,7 +250,7 @@ $ recoder mcp detect
 export PATH="$PATH:$(npm config get prefix)/bin"
 
 # Or reinstall
-npm install -g recoder-code-cli
+npm install -g recoder-code
 ```
 
 ### Node.js version
@@ -270,7 +270,7 @@ fnm use 20
 ```bash
 # Fix npm permissions
 sudo chown -R $(whoami) ~/.npm
-npm install -g recoder-code-cli
+npm install -g recoder-code
 ```
 
 ## Links
@@ -278,7 +278,7 @@ npm install -g recoder-code-cli
 - **Website:** https://recoder.xyz
 - **Documentation:** https://recoder.xyz/docs
 - **GitHub:** https://github.com/recoderxyz/recoder-code
-- **npm:** https://www.npmjs.com/package/recoder-code-cli
+- **npm:** https://www.npmjs.com/package/recoder-code
 
 ## License
 

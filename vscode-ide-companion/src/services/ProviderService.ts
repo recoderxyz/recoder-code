@@ -270,7 +270,7 @@ export class ProviderService {
     if (process.env[provider.apiKeyEnv]) return true;
 
     // Check VS Code settings
-    const config = vscode.workspace.getConfiguration('recoder');
+    const config = vscode.workspace.getConfiguration('recoderCode');
     const keys = config.get<Record<string, string>>('apiKeys') || {};
     return !!keys[provider.id];
   }
@@ -287,7 +287,7 @@ export class ProviderService {
     if (envKey) return envKey;
 
     // Check VS Code settings
-    const config = vscode.workspace.getConfiguration('recoder');
+    const config = vscode.workspace.getConfiguration('recoderCode');
     const keys = config.get<Record<string, string>>('apiKeys') || {};
     return keys[provider.id];
   }
@@ -296,7 +296,7 @@ export class ProviderService {
    * Set API key for provider
    */
   async setApiKey(providerId: string, apiKey: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('recoder');
+    const config = vscode.workspace.getConfiguration('recoderCode');
     const keys = config.get<Record<string, string>>('apiKeys') || {};
     keys[providerId] = apiKey;
     await config.update('apiKeys', keys, vscode.ConfigurationTarget.Global);
@@ -413,5 +413,61 @@ export class ProviderService {
     }));
 
     return { local: localStatus, cloud: cloudStatus };
+  }
+
+  /**
+   * Get the default provider from VS Code settings
+   */
+  getDefaultProvider(): string {
+    const config = vscode.workspace.getConfiguration('recoderCode');
+    return config.get('defaultProvider', 'openrouter');
+  }
+
+  /**
+   * Set the default provider in VS Code settings
+   */
+  async setDefaultProvider(providerId: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('recoderCode');
+    await config.update('defaultProvider', providerId, vscode.ConfigurationTarget.Global);
+  }
+
+  /**
+   * Get the default model from VS Code settings
+   */
+  getDefaultModel(): string {
+    const config = vscode.workspace.getConfiguration('recoderCode');
+    return config.get('defaultModel', '');
+  }
+
+  /**
+   * Set the default model in VS Code settings
+   */
+  async setDefaultModel(model: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('recoderCode');
+    await config.update('defaultModel', model, vscode.ConfigurationTarget.Global);
+  }
+
+  /**
+   * Get all configuration settings needed for AI functionality
+   */
+  getAIConfiguration(): {
+    defaultProvider: string;
+    defaultModel: string;
+    maxTokens: number;
+    temperature: number;
+    enableInlineSuggestions: boolean;
+    enableCodeLens: boolean;
+    enableAutoCompletion: boolean;
+  } {
+    const config = vscode.workspace.getConfiguration('recoderCode');
+    return {
+      defaultProvider: config.get('defaultProvider', 'openrouter'),
+      defaultModel: config.get('defaultModel', ''),
+      maxTokens: config.get('maxTokens', 4096),
+      temperature: config.get('temperature', 0.7),
+      enableInlineSuggestions: config.get('enableInlineSuggestions', false),
+      enableCodeLens: config.get('enableCodeLens', true),
+      enableAutoCompletion: config.get('enableAutoCompletion', true)
+    };
   }
 }

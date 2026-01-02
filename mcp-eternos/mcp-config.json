@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "eternos": {
+      "command": "npx",
+      "args": ["-y", "recoder-mcp-eternos"]
+    }
+  }
+}

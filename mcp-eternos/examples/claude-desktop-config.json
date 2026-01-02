@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "eternos": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/recoder-code/packages/mcp-eternos/dist/index.js"
+      ],
+      "env": {}
+    }
+  }
+}

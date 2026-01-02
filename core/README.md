@@ -465,7 +465,7 @@ MIT License - see [LICENSE](LICENSE) for details
 ## 🔗 Links
 
 - **GitHub:** https://github.com/recoderxyz/recoder-code
-- **CLI Package:** [recoder-code-cli](https://www.npmjs.com/package/recoder-code-cli)
+- **CLI Package:** [recoder-code](https://www.npmjs.com/package/recoder-code)
 - **VSCode Extension:** [Recoder Code Companion](https://marketplace.visualstudio.com/items?itemName=recoder.recoder-code-vscode-companion)
 - **Website:** https://recoder.xyz
 - **Documentation:** https://recoder.xyz/docs

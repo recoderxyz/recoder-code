@@ -19,7 +19,7 @@
   },
   "homepage": "https://recoder.xyz",
   "engines": {
-    "vscode": "^1.105.0"
+    "vscode": "^1.95.0"
   },
   "license": "LICENSE",
   "preview": true,
@@ -141,6 +141,15 @@
         "title": "Recoder Code: Add Comments"
       },
       {
+        "command": "recoder.ghost.toggle",
+        "title": "Recoder Code: Toggle Inline Suggestions",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "recoder.ghost.clearCache",
+        "title": "Recoder Code: Clear Suggestion Cache"
+      },
+      {
         "command": "recoder.code.generateTests",
         "title": "Recoder Code: Generate Tests"
       },
@@ -170,6 +179,66 @@
       {
         "command": "recoder.openGitHub",
         "title": "Recoder Code: Star on GitHub"
+      },
+      {
+        "command": "recoder.settings.open",
+        "title": "Recoder Code: Open Settings",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "recoder.diffTheme.configure",
+        "title": "Recoder Code: Configure Diff Theme",
+        "icon": "$(color-mode)"
+      },
+      {
+        "command": "recoder.codelens.explain",
+        "title": "Recoder Code: Explain Code (CodeLens)",
+        "icon": "$(question)"
+      },
+      {
+        "command": "recoder.codelens.refactor",
+        "title": "Recoder Code: Refactor Code (CodeLens)",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "recoder.codelens.generateTests",
+        "title": "Recoder Code: Generate Tests (CodeLens)",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "recoder.codelens.addComments",
+        "title": "Recoder Code: Add Comments (CodeLens)",
+        "icon": "$(comment)"
+      },
+      {
+        "command": "recoder.codelens.askAI",
+        "title": "Recoder Code: Ask AI (CodeLens)",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "recoder.codelens.toggle",
+        "title": "Recoder Code: Toggle CodeLens",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "recoder.sidebar.setModel",
+        "title": "Recoder Code: Set Model",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "recoder.sidebar.useProvider",
+        "title": "Recoder Code: Use Provider",
+        "icon": "$(server)"
+      },
+      {
+        "command": "recoder.sidebar.resumeChat",
+        "title": "Recoder Code: Resume Chat",
+        "icon": "$(history)"
+      },
+      {
+        "command": "recoder.sidebar.refresh",
+        "title": "Recoder Code: Refresh Sidebar",
+        "icon": "$(refresh)"
       }
     ],
     "viewsContainers": {
@@ -184,24 +253,63 @@
     "views": {
       "recoder-code": [
         {
-          "id": "recoder.authStatus",
-          "name": "Authentication"
+          "id": "recoder.sidebarAuth",
+          "name": "Account",
+          "icon": "$(account)",
+          "visibility": "visible"
+        },
+        {
+          "id": "recoder.modelSelector",
+          "name": "Model",
+          "icon": "$(symbol-method)",
+          "visibility": "visible"
         },
         {
           "id": "recoder.providers",
-          "name": "Providers"
+          "name": "AI Providers",
+          "icon": "$(server)",
+          "visibility": "visible"
+        },
+        {
+          "id": "recoder.chatHistory",
+          "name": "Chat History",
+          "icon": "$(comment-discussion)",
+          "visibility": "collapsed"
+        },
+        {
+          "id": "recoder.quickActions",
+          "name": "Quick Actions",
+          "icon": "$(zap)",
+          "visibility": "visible"
+        },
+        {
+          "id": "recoder.authStatus",
+          "name": "Authentication (Legacy)",
+          "icon": "$(key)",
+          "visibility": "hidden"
         },
         {
           "id": "recoder.models",
-          "name": "Models"
+          "name": "Models (Legacy)",
+          "icon": "$(library)",
+          "visibility": "hidden"
         },
         {
           "id": "recoder.usage",
-          "name": "Usage & Credits"
+          "name": "Usage & Credits",
+          "icon": "$(dashboard)",
+          "visibility": "collapsed"
         }
       ]
     },
     "menus": {
+      "view/title": [
+        {
+          "command": "recoder.settings.open",
+          "when": "view == recoder.authStatus",
+          "group": "navigation"
+        }
+      ],
       "commandPalette": [
         {
           "command": "recoder.diff.accept",
@@ -247,7 +355,221 @@
         }
       ]
     },
+    "configuration": {
+      "title": "Recoder Code",
+      "properties": {
+        "recoderCode.defaultProvider": {
+          "type": "string",
+          "default": "openrouter",
+          "enum": ["openrouter", "openai", "anthropic", "groq", "ollama", "deepseek", "mistral", "google"],
+          "enumDescriptions": [
+            "OpenRouter (350+ models, free tier available)",
+            "OpenAI (GPT-4, GPT-4o, requires API key)",
+            "Anthropic (Claude 3.5, requires API key)",
+            "Groq (Fast inference, free tier available)",
+            "Ollama (Local AI, requires local installation)",
+            "DeepSeek (DeepSeek V3, free tier available)",
+            "Mistral (Mistral models, free tier available)",
+            "Google (Gemini Pro, free tier available)"
+          ],
+          "description": "Default AI provider to use for code assistance"
+        },
+        "recoderCode.defaultModel": {
+          "type": "string",
+          "default": "",
+          "description": "Default model to use (e.g., gpt-4o, claude-3-5-sonnet, llama3.2). Leave empty to use provider default."
+        },
+        "recoderCode.inlineSuggestions.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI-powered inline code suggestions (Copilot-like ghost text)"
+        },
+        "recoderCode.inlineSuggestions.debounceDelay": {
+          "type": "number",
+          "default": 300,
+          "minimum": 100,
+          "maximum": 2000,
+          "description": "Delay in milliseconds before fetching inline suggestions"
+        },
+        "recoderCode.inlineSuggestions.maxContextLines": {
+          "type": "number",
+          "default": 50,
+          "minimum": 10,
+          "maximum": 200,
+          "description": "Maximum lines of context to send for inline suggestions"
+        },
+        "recoderCode.enableCodeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show code lens actions above functions and classes"
+        },
+        "recoderCode.enableAutoCompletion": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI-powered auto-completion"
+        },
+        "recoderCode.maxTokens": {
+          "type": "number",
+          "default": 4096,
+          "minimum": 256,
+          "maximum": 32768,
+          "description": "Maximum number of tokens for AI responses"
+        },
+        "recoderCode.temperature": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Creativity level for AI responses (0 = deterministic, 2 = very creative)"
+        },
+        "recoderCode.enableTelemetry": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable anonymous usage analytics to help improve the extension"
+        },
+        "recoderCode.autoSaveChats": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically save chat conversations"
+        },
+        "recoderCode.theme": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "light", "dark", "high-contrast"],
+          "description": "Theme for Recoder Code UI components"
+        },
+        "recoderCode.diffTheme": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "github", "monokai", "solarized", "dracula", "nord", "custom"],
+          "enumDescriptions": [
+            "Follow VS Code theme",
+            "GitHub-style diff colors",
+            "Monokai Pro diff theme", 
+            "Solarized diff colors",
+            "Dracula diff theme",
+            "Nord diff theme",
+            "Custom user-defined theme"
+          ],
+          "description": "Custom theme for diff view styling"
+        },
+        "recoderCode.diffCustomColors": {
+          "type": "object",
+          "default": {},
+          "description": "Custom colors for diff view when using 'custom' theme",
+          "properties": {
+            "addedBackground": {
+              "type": "string",
+              "default": "#1e5f2e",
+              "description": "Background color for added lines"
+            },
+            "addedForeground": {
+              "type": "string", 
+              "default": "#ffffff",
+              "description": "Text color for added lines"
+            },
+            "removedBackground": {
+              "type": "string",
+              "default": "#5f1e1e", 
+              "description": "Background color for removed lines"
+            },
+            "removedForeground": {
+              "type": "string",
+              "default": "#ffffff",
+              "description": "Text color for removed lines"
+            },
+            "modifiedBackground": {
+              "type": "string",
+              "default": "#2e4d5f",
+              "description": "Background color for modified lines"
+            },
+            "modifiedForeground": {
+              "type": "string",
+              "default": "#ffffff", 
+              "description": "Text color for modified lines"
+            }
+          }
+        },
+        "recoderCode.apiKeys": {
+          "type": "object",
+          "default": {},
+          "description": "API keys for different providers (stored securely in VS Code)",
+          "properties": {
+            "openai": {
+              "type": "string",
+              "description": "OpenAI API key"
+            },
+            "anthropic": {
+              "type": "string", 
+              "description": "Anthropic API key"
+            },
+            "groq": {
+              "type": "string",
+              "description": "Groq API key"
+            },
+            "deepseek": {
+              "type": "string",
+              "description": "DeepSeek API key"
+            },
+            "mistral": {
+              "type": "string",
+              "description": "Mistral API key"
+            },
+            "google": {
+              "type": "string",
+              "description": "Google AI API key"
+            }
+          }
+        },
+        "recoderCode.customProviders": {
+          "type": "array",
+          "default": [],
+          "description": "Custom OpenAI-compatible providers",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Provider name"
+              },
+              "baseURL": {
+                "type": "string",
+                "description": "Base URL for the provider API"
+              },
+              "apiKey": {
+                "type": "string",
+                "description": "API key for the provider"
+              },
+              "models": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Available models for this provider"
+              }
+            },
+            "required": ["name", "baseURL"]
+          }
+        },
+        "recoderCode.ollamaHost": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Ollama server host URL"
+        },
+        "recoderCode.lmStudioHost": {
+          "type": "string", 
+          "default": "http://localhost:1234",
+          "description": "LM Studio server host URL"
+        }
+      }
+    },
     "keybindings": [
+      {
+        "command": "recoder.settings.open",
+        "key": "ctrl+comma",
+        "mac": "cmd+comma",
+        "when": "!terminalFocus"
+      },
       {
         "command": "recoder.diff.accept",
         "key": "ctrl+s",
@@ -280,7 +602,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "20.x",
-    "@types/vscode": "^1.105.0",
+    "@types/vscode": "^1.95.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "@vitest/ui": "^3.2.4",

@@ -32,6 +32,12 @@ The official VS Code extension for Recoder Code - brings AI assistance directly 
 
 ## Features
 
+### 🎛️ **Easy Configuration**
+- **Settings UI**: Modern web interface for all configuration
+- **One-Click Setup**: Test API keys and connections instantly
+- **Local AI Detection**: Automatically find Ollama/LM Studio servers
+- **Secure Storage**: API keys encrypted in VS Code's secret storage
+
 ### Smart File Context
 - All open files tracked automatically
 - Selected text sent as context
@@ -64,20 +70,24 @@ code --install-extension recoder.recoder-code-vscode-companion
 
 ### 2. Install CLI
 ```bash
-npm install -g recoder-code-cli
+npm install -g recoder-code
 ```
 
 ### 3. Configure Provider
 
+**Easy Setup with Settings UI:**
+1. Press `Cmd+,` (macOS) or `Ctrl+,` (Windows/Linux)
+2. Choose your preferred AI provider
+3. Enter API key and test connection
+4. Select your default model
+
 **Option A: Use OpenRouter (Recommended)**
-1. Get free API key at [openrouter.ai/keys](https://openrouter.ai/keys)
-2. Run `Recoder Code: Configure Provider API Key` from Command Palette
-3. Select OpenRouter and enter your key
+- Get free API key at [openrouter.ai/keys](https://openrouter.ai/keys)
+- 200+ models available, generous free tier
 
 **Option B: Use Local AI (Free, Private)**
-1. Install [Ollama](https://ollama.ai) or [LM Studio](https://lmstudio.ai)
-2. Run `Recoder Code: Detect Local AI`
-3. Select a model
+- Install [Ollama](https://ollama.ai) or [LM Studio](https://lmstudio.ai)
+- Auto-detection will find running servers
 
 ### 4. Start Coding
 - Press `Cmd+Shift+P` / `Ctrl+Shift+P`
@@ -86,12 +96,13 @@ npm install -g recoder-code-cli
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `Recoder Code: Run` | Start AI session |
-| `Recoder Code: List All Providers` | View all 12+ providers |
-| `Recoder Code: Detect Local AI` | Find Ollama, LM Studio |
-| `Recoder Code: Configure Provider` | Set API keys |
+| Command | Shortcut | Description |
+|---------|----------|-------------|
+| `Recoder Code: Open Settings` | `Cmd+,` / `Ctrl+,` | **Configure all settings with UI** |
+| `Recoder Code: Run` | - | Start AI session |
+| `Recoder Code: List All Providers` | - | View all 12+ providers |
+| `Recoder Code: Detect Local AI` | - | Find Ollama, LM Studio |
+| `Recoder Code: Configure Provider` | - | Set API keys (command line) |
 | `Recoder Code: Login` | Login to recoder.xyz |
 | `Recoder Code: Browse Models` | Explore available models |
 | `Recoder Code: Explain This` | Explain selected code |
@@ -122,8 +133,8 @@ npm install -g recoder-code-cli
 
 - **Website:** [recoder.xyz](https://recoder.xyz)
 - **GitHub:** [github.com/recoderxyz/recoder-code](https://github.com/recoderxyz/recoder-code)
-- **Twitter:** [@recoderxyz](https://twitter.com/recoderxyz)
-- **CLI Package:** [npm/recoder-code-cli](https://www.npmjs.com/package/recoder-code-cli)
+- **X (Twitter):** [@recoderxyz](https://x.com/recoderxyz)
+- **CLI Package:** [npm/recoder-code](https://www.npmjs.com/package/recoder-code)
 - **Issues:** [Report a bug](https://github.com/recoderxyz/recoder-code/issues)
 - **Discussions:** [Ask questions](https://github.com/recoderxyz/recoder-code/discussions)
 
@@ -138,7 +149,7 @@ npm install -g recoder-code-cli
 If you find this extension helpful:
 - [Star on GitHub](https://github.com/recoderxyz/recoder-code)
 - [Review on Marketplace](https://marketplace.visualstudio.com/items?itemName=recoder.recoder-code-vscode-companion)
-- [Follow on Twitter](https://twitter.com/recoderxyz)
+- [Follow on X](https://x.com/recoderxyz)
 
 ## License
 

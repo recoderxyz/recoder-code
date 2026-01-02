@@ -12,6 +12,7 @@ import { type JSONRPCNotification } from '@modelcontextprotocol/sdk/types.js';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { DIFF_SCHEME } from './extension.js';
+import { DiffThemeService } from './services/DiffThemeService.js';
 
 export class DiffContentProvider implements vscode.TextDocumentContentProvider {
   private content = new Map<string, string>();
@@ -55,11 +56,14 @@ export class DiffManager {
   readonly onDidChange = this.onDidChangeEmitter.event;
   private diffDocuments = new Map<string, DiffInfo>();
   private readonly subscriptions: vscode.Disposable[] = [];
+  private diffThemeService: DiffThemeService;
 
   constructor(
     private readonly log: (message: string) => void,
     private readonly diffContentProvider: DiffContentProvider,
+    context: vscode.ExtensionContext
   ) {
+    this.diffThemeService = new DiffThemeService(context);
     this.subscriptions.push(
       vscode.window.onDidChangeActiveTextEditor((editor) => {
         this.onActiveEditorChange(editor);
@@ -78,6 +82,9 @@ export class DiffManager {
    * Creates and shows a new diff view.
    */
   async showDiff(filePath: string, newContent: string) {
+    // Apply current diff theme before showing
+    await this.diffThemeService.applyCurrentTheme();
+    
     const fileUri = vscode.Uri.file(filePath);
 
     const rightDocUri = vscode.Uri.from({
