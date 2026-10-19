@@ -86,85 +86,83 @@ class WebSearchToolInvocation extends BaseToolInvocation<
   }
 
   async execute(signal: AbortSignal): Promise<WebSearchToolResult> {
-    const apiKey =
-      this.config.getTavilyApiKey() || process.env['TAVILY_API_KEY'];
+    const searxngUrl = process.env['SEARXNG_URL'] || 'http://127.0.0.1:8888';
+
+    try {
+      // Try SearXNG first (self-hosted, no API key, no rate limits)
+      const params = new URLSearchParams({
+        q: this.params.query,
+        format: 'json',
+        pageno: '1',
+      });
+
+      const response = await fetch(`${searxngUrl}/search?${params.toString()}`, { signal });
+
+      if (!response.ok) {
+        throw new Error(`SearXNG error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as {
+        results: Array<{ title: string; url: string; content: string; engine: string }>;
+      };
+
+      const rawResults = data.results || [];
+      if (rawResults.length === 0) {
+        return await this._tavilyFallback(signal);
+      }
+
+      const sources = rawResults.slice(0, 5).map((r) => ({
+        title: r.title || 'Untitled',
+        url: r.url || '',
+      }));
+
+      let content = rawResults
+        .slice(0, 5)
+        .map((r, i) => `${i + 1}. **${r.title}**\n   ${r.content || ''}\n   URL: ${r.url}`)
+        .join('\n\n');
+
+      content += `\n\nSources:\n${sources.map((s, i) => `[${i + 1}] ${s.title} (${s.url})`).join('\n')}`;
+
+      return {
+        llmContent: `Web search results for "${this.params.query}":\n\n${content}`,
+        returnDisplay: `Search results for "${this.params.query}" returned (${rawResults.length} results).`,
+        sources,
+      };
+    } catch (error: unknown) {
+      console.warn(`SearXNG failed, trying Tavily fallback: ${getErrorMessage(error)}`);
+      return await this._tavilyFallback(signal);
+    }
+  }
+
+  private async _tavilyFallback(signal: AbortSignal): Promise<WebSearchToolResult> {
+    const apiKey = this.config.getTavilyApiKey() || process.env['TAVILY_API_KEY'];
     if (!apiKey) {
       return {
-        llmContent:
-          'Web search is disabled because TAVILY_API_KEY is not configured. Please set it in your settings.json, .env file, or via --tavily-api-key command line argument to enable web search.',
-        returnDisplay:
-          'Web search disabled. Configure TAVILY_API_KEY to enable Tavily search.',
+        llmContent: 'Web search failed: SearXNG is unavailable and no TAVILY_API_KEY is configured as fallback.',
+        returnDisplay: 'Web search unavailable.',
       };
     }
 
     try {
       const response = await fetch('https://api.tavily.com/search', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          api_key: apiKey,
-          query: this.params.query,
-          search_depth: 'advanced',
-          max_results: 5,
-          include_answer: true,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey, query: this.params.query, search_depth: 'basic', max_results: 5, include_answer: true }),
         signal,
       });
 
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        throw new Error(
-          `Tavily API error: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`,
-        );
-      }
+      if (!response.ok) throw new Error(`Tavily API error: ${response.status}`);
 
       const data = (await response.json()) as TavilySearchResponse;
+      const sources = (data.results || []).map((r) => ({ title: r.title, url: r.url }));
+      let content = data.answer?.trim() || sources.slice(0, 3).map((s, i) => `${i + 1}. ${s.title} - ${s.url}`).join('\n');
+      if (sources.length > 0) content += `\n\nSources:\n${sources.map((s, i) => `[${i + 1}] ${s.title} (${s.url})`).join('\n')}`;
 
-      const sources = (data.results || []).map((r) => ({
-        title: r.title,
-        url: r.url,
-      }));
-
-      const sourceListFormatted = sources.map(
-        (s, i) => `[${i + 1}] ${s.title || 'Untitled'} (${s.url})`,
-      );
-
-      let content = data.answer?.trim() || '';
-      if (!content) {
-        // Fallback: build a concise summary from top results
-        content = sources
-          .slice(0, 3)
-          .map((s, i) => `${i + 1}. ${s.title} - ${s.url}`)
-          .join('\n');
-      }
-
-      if (sourceListFormatted.length > 0) {
-        content += `\n\nSources:\n${sourceListFormatted.join('\n')}`;
-      }
-
-      if (!content.trim()) {
-        return {
-          llmContent: `No search results or information found for query: "${this.params.query}"`,
-          returnDisplay: 'No information found.',
-        };
-      }
-
-      return {
-        llmContent: `Web search results for "${this.params.query}":\n\n${content}`,
-        returnDisplay: `Search results for "${this.params.query}" returned.`,
-        sources,
-      };
+      return { llmContent: `Web search results for "${this.params.query}":\n\n${content}`, returnDisplay: `Search results returned.`, sources };
     } catch (error: unknown) {
-      const errorMessage = `Error during web search for query "${this.params.query}": ${getErrorMessage(
-        error,
-      )}`;
+      const errorMessage = `Error during web search: ${getErrorMessage(error)}`;
       console.error(errorMessage, error);
-      return {
-        llmContent: `Error: ${errorMessage}`,
-        returnDisplay: `Error performing web search.`,
-      };
+      return { llmContent: `Error: ${errorMessage}`, returnDisplay: 'Error performing web search.' };
     }
   }
 }

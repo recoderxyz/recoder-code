@@ -1,5 +1,5 @@
 /**
- * Providers config command - Configure API keys
+ * Providers config command - Configure API keys with secure storage
  */
 
 import chalk from 'chalk';
@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as readline from 'readline';
+import { SecureKeyStorage } from '../../utils/secure-storage.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.recoder-code');
 const ENV_FILE = path.join(CONFIG_DIR, '.env');
@@ -22,6 +23,14 @@ export async function configureProvider(provider?: string) {
     console.log();
     console.log(chalk.cyan('Usage: recoder providers config <provider>'));
     console.log();
+    
+    // Show stored keys
+    const stored = await SecureKeyStorage.list();
+    if (stored.length > 0) {
+      console.log(chalk.green('Configured providers:'));
+      stored.forEach(p => console.log(chalk.gray(`  ✓ ${p}`)));
+      console.log();
+    }
     return;
   }
 
@@ -45,6 +54,7 @@ export async function configureProvider(provider?: string) {
     new Promise((resolve) => rl.question(q, resolve));
 
   console.log(chalk.bold.cyan(`\n⚙️  Configure ${provider}\n`));
+  console.log(chalk.gray('API key will be stored securely in keychain\n'));
 
   const apiKey = await question(chalk.white(`Enter ${envVar}: `));
   rl.close();
@@ -54,27 +64,36 @@ export async function configureProvider(provider?: string) {
     return;
   }
 
-  // Save to env file
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  try {
+    // Store in secure keychain
+    await SecureKeyStorage.set(provider.toLowerCase(), apiKey.trim());
+    
+    // Also save to env file for backward compatibility
+    if (!fs.existsSync(CONFIG_DIR)) {
+      fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    }
+
+    let envContent = '';
+    if (fs.existsSync(ENV_FILE)) {
+      envContent = fs.readFileSync(ENV_FILE, 'utf-8');
+    }
+
+    // Update or add the key
+    const regex = new RegExp(`^${envVar}=.*$`, 'm');
+    if (regex.test(envContent)) {
+      envContent = envContent.replace(regex, `${envVar}=${apiKey.trim()}`);
+    } else {
+      envContent += `\n${envVar}=${apiKey.trim()}`;
+    }
+
+    fs.writeFileSync(ENV_FILE, envContent.trim() + '\n');
+
+    console.log(chalk.green(`\n✓ API key stored securely`));
+    console.log(chalk.gray(`  Keychain: ${process.platform === 'darwin' ? 'macOS Keychain' : 'Encrypted file'}`));
+    console.log(chalk.gray(`  Fallback: ${ENV_FILE}`));
+    console.log();
+  } catch (err: any) {
+    console.log(chalk.red(`\n❌ Error: ${err.message}`));
+    console.log();
   }
-
-  let envContent = '';
-  if (fs.existsSync(ENV_FILE)) {
-    envContent = fs.readFileSync(ENV_FILE, 'utf-8');
-  }
-
-  // Update or add the key
-  const regex = new RegExp(`^${envVar}=.*$`, 'm');
-  if (regex.test(envContent)) {
-    envContent = envContent.replace(regex, `${envVar}=${apiKey.trim()}`);
-  } else {
-    envContent += `\n${envVar}=${apiKey.trim()}`;
-  }
-
-  fs.writeFileSync(ENV_FILE, envContent.trim() + '\n');
-
-  console.log(chalk.green(`\n✓ Saved to ${ENV_FILE}`));
-  console.log(chalk.gray(`  Add to shell: export ${envVar}="${apiKey.trim()}"`));
-  console.log();
 }

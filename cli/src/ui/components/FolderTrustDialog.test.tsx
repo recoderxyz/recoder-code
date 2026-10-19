@@ -10,8 +10,8 @@ import { vi } from 'vitest';
 import { FolderTrustDialog, FolderTrustChoice } from './FolderTrustDialog.js';
 import * as process from 'node:process';
 
-vi.mock('process', async () => {
-  const actual = await vi.importActual('process');
+vi.mock('node:process', async () => {
+  const actual = await vi.importActual('node:process');
   return {
     ...actual,
     exit: vi.fn(),

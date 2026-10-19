@@ -6,11 +6,20 @@ import type { CommandModule } from 'yargs';
 import * as readline from 'readline';
 import { getProviderRegistry } from '../providers/registry.js';
 import { BUILTIN_PROVIDERS } from '../providers/types.js';
+import { RecoderAuthService } from '../services/RecoderAuthService.js';
 
 export const configureCommand: CommandModule = {
   command: 'configure',
   describe: 'Interactive configuration wizard',
   handler: async () => {
+    // Require authentication
+    const authService = new RecoderAuthService();
+    const session = await authService.getSession();
+    if (!session) {
+      console.error('❌ Please login first: recoder auth login');
+      process.exit(1);
+    }
+
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,

@@ -4,8 +4,8 @@
  */
 
 import { Command } from 'commander';
-import { createContextInitCommand } from './init';
-import { createContextEditCommand } from './edit';
+import { createContextInitCommand } from './init.js';
+import { createContextEditCommand } from './edit.js';
 
 export function createContextCommand() {
   const command = new Command('context')

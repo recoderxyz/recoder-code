@@ -241,6 +241,8 @@ When in doubt, use this tool. Being proactive with task management demonstrates 
 `;
 
 const TODO_SUBDIR = 'todos';
+const TODO_SCRATCHPAD_KEY_PREFIX = 'todo-board';
+const TODO_SCRATCHPAD_TIMEOUT_MS = 5_000;
 
 function getTodoFilePath(sessionId?: string): string {
   const homeDir =
@@ -290,6 +292,74 @@ async function writeTodosToFile(
   await fs.writeFile(todoFilePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+function getTodoScratchpadMirrorConfig(localSessionId?: string):
+  | {
+      backendUrl: string;
+      agentId: string;
+      sharedSessionId: string;
+      authToken?: string;
+    }
+  | null {
+  const backendUrl =
+    process.env['RECODER_DOCKER_URL'] || process.env['DOCKER_BACKEND_URL'] || '';
+  const agentId = process.env['RECODER_AGENT_ID'] || '';
+  const sharedSessionId = process.env['RECODER_SESSION_ID'] || '';
+
+  if (!backendUrl || !agentId || !sharedSessionId) {
+    return null;
+  }
+
+  const authToken =
+    process.env['RECODER_SESSION_TOKEN'] || process.env['RECODER_API_TOKEN'] || '';
+
+  return {
+    backendUrl,
+    agentId,
+    sharedSessionId: sharedSessionId || localSessionId || 'default',
+    authToken: authToken || undefined,
+  };
+}
+
+async function mirrorTodosToScratchpad(
+  todos: TodoItem[],
+  localSessionId?: string,
+): Promise<void> {
+  const mirrorConfig = getTodoScratchpadMirrorConfig(localSessionId);
+  if (!mirrorConfig) return;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (mirrorConfig.authToken) {
+    headers['Authorization'] = `Bearer ${mirrorConfig.authToken}`;
+  }
+
+  const response = await fetch(
+    `${mirrorConfig.backendUrl.replace(/\/$/, '')}/api/a2a/scratchpad/write`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        sessionId: mirrorConfig.sharedSessionId,
+        agentId: mirrorConfig.agentId,
+        key: `${TODO_SCRATCHPAD_KEY_PREFIX}:${mirrorConfig.agentId}`,
+        value: {
+          type: 'todo_board',
+          agentId: mirrorConfig.agentId,
+          localSessionId: localSessionId || 'default',
+          todos,
+          updatedAt: new Date().toISOString(),
+        },
+      }),
+      signal: AbortSignal.timeout(TODO_SCRATCHPAD_TIMEOUT_MS),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Scratchpad sync failed with ${response.status}`);
+  }
+}
+
 class TodoWriteToolInvocation extends BaseToolInvocation<
   TodoWriteParams,
   ToolResult
@@ -333,6 +403,13 @@ class TodoWriteToolInvocation extends BaseToolInvocation<
       }
 
       await writeTodosToFile(finalTodos, sessionId);
+      await mirrorTodosToScratchpad(finalTodos, sessionId).catch((error) => {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        console.warn(
+          `[TodoWriteTool] Scratchpad mirror skipped: ${errorMessage}`,
+        );
+      });
 
       // Create structured display object for rich UI rendering
       const todoResultDisplay = {

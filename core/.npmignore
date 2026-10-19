@@ -1,0 +1,14 @@
+# Credential and environment files — NEVER publish
+.env
+.env.*
+.dev.vars
+*.vars
+
+# Test files
+**/*.test.js
+**/*.test.ts
+**/*.spec.js
+**/*.spec.ts
+
+# Node modules
+**/node_modules/

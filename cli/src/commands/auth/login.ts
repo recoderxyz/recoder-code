@@ -61,6 +61,11 @@ export const loginCommand: CommandModule = {
         await authService.loginWithWeb();
       }
 
+      // Suggest MCP setup for Claude Code users
+      console.log('\n🔧 To use Recoder tools in Claude Code, run:');
+      console.log('   recoder-code setup-mcp');
+      console.log('   recoder-code setup-mcp --global  (for all projects)\n');
+
       process.exit(0);
     } catch (error: any) {
       console.error(`❌ Login failed: ${error.message}`);

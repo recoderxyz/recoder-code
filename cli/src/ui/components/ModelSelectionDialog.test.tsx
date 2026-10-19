@@ -154,11 +154,11 @@ describe('ModelSelectionDialog', () => {
 
     const expectedItems = [
       {
-        label: 'qwen3-coder-plus (current)',
+        label: 'qwen3-coder-plus ⭐',
         value: 'qwen3-coder-plus',
       },
       {
-        label: 'qwen-vl-max [Vision]',
+        label: 'qwen-vl-max 👁️',
         value: 'qwen-vl-max-latest',
       },
       {
@@ -186,7 +186,7 @@ describe('ModelSelectionDialog', () => {
       (item: RadioSelectItem<string>) => item.value === 'qwen-vl-max-latest',
     );
 
-    expect(visionModelItem?.label).toContain('[Vision]');
+    expect(visionModelItem?.label).toContain('👁️');
   });
 
   it('should show current indicator for the current model', () => {
@@ -204,7 +204,7 @@ describe('ModelSelectionDialog', () => {
       (item: RadioSelectItem<string>) => item.value === 'qwen-vl-max-latest',
     );
 
-    expect(currentModelItem?.label).toContain('(current)');
+    expect(currentModelItem?.label).toContain('⭐');
   });
 
   it('should pass isFocused prop to RadioButtonSelect', () => {

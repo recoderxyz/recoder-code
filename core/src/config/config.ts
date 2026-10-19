@@ -49,6 +49,9 @@ import type { AnyToolInvocation } from '../tools/tools.js';
 import { WebFetchTool } from '../tools/web-fetch.js';
 import { WebSearchTool } from '../tools/web-search.js';
 import { WriteFileTool } from '../tools/write-file.js';
+import { MultiEditTool } from '../tools/multi-edit.js';
+import { BatchToolsTool } from '../tools/batch-tools.js';
+import { ApplyPatchTool } from '../tools/apply-patch.js';
 import { shouldAttemptBrowserLaunch } from '../utils/browser.js';
 import { FileExclusions } from '../utils/ignorePatterns.js';
 import { WorkspaceContext } from '../utils/workspaceContext.js';
@@ -470,6 +473,11 @@ export class Config {
     this.subagentManager = new SubagentManager(this);
     this.toolRegistry = await this.createToolRegistry();
     logCliConfiguration(this, new StartSessionEvent(this, this.toolRegistry));
+
+    // Auto-register with A2A terminal registry (best-effort, non-blocking)
+    import('../a2a/terminal-registration.js').then(({ registerTerminal }) => {
+      registerTerminal({ workspaceDir: this.getWorkingDir() }).catch(() => {});
+    }).catch(() => {});
   }
 
   async refreshAuth(authMethod: AuthType) {
@@ -780,16 +788,13 @@ export class Config {
 
   /**
    * Gets custom file exclusion patterns from configuration.
-   * TODO: This is a placeholder implementation. In the future, this could
-   * read from settings files, CLI arguments, or environment variables.
+   * Reads from RECODER_CUSTOM_EXCLUDES env var (comma-separated) if set.
    */
   getCustomExcludes(): string[] {
-    // Placeholder implementation - returns empty array for now
-    // Future implementation could read from:
-    // - User settings file
-    // - Project-specific configuration
-    // - Environment variables
-    // - CLI arguments
+    const envExcludes = process.env.RECODER_CUSTOM_EXCLUDES;
+    if (envExcludes) {
+      return envExcludes.split(',').map(p => p.trim()).filter(Boolean);
+    }
     return [];
   }
 
@@ -1057,10 +1062,14 @@ export class Config {
     registerCoreTool(TodoWriteTool, this);
     registerCoreTool(ExitPlanModeTool, this);
     registerCoreTool(WebFetchTool, this);
-    // Conditionally register web search tool only if Tavily API key is set
-    if (this.getTavilyApiKey()) {
-      registerCoreTool(WebSearchTool, this);
-    }
+    // Web search always registered — uses SearXNG (self-hosted, no API key needed)
+    // Falls back to Tavily if TAVILY_API_KEY is set, then DuckDuckGo
+    registerCoreTool(WebSearchTool, this);
+
+    // OpenCode-inspired tools: multi-edit, batch, apply-patch
+    registerCoreTool(MultiEditTool, this);
+    registerCoreTool(BatchToolsTool);
+    registerCoreTool(ApplyPatchTool, this);
 
     await registry.discoverAllTools();
     return registry;

@@ -129,6 +129,11 @@ import { isNarrowWidth } from './utils/isNarrowWidth.js';
 import { useWorkspaceMigration } from './hooks/useWorkspaceMigration.js';
 import { WorkspaceMigrationDialog } from './components/WorkspaceMigrationDialog.js';
 import { WelcomeBackDialog } from './components/WelcomeBackDialog.js';
+import {
+  lifecycleStateForLoom,
+  type LoomAgentState,
+  reportLoomAgentState,
+} from './hooks/loomAgentStatus.js';
 
 // Maximum number of queued messages to display in UI to prevent performance issues
 const MAX_DISPLAYED_QUEUED_MESSAGES = 3;
@@ -785,6 +790,19 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
       ),
     [pendingSlashCommandHistoryItems, pendingGeminiHistoryItems],
   );
+
+  const loomLifecycleState = lifecycleStateForLoom({
+    streamingState,
+    hasConfirmation: Boolean(confirmationRequest),
+    hasShellConfirmation: Boolean(shellConfirmationRequest),
+    hasExecutingTool: isToolExecuting(pendingHistoryItems),
+  });
+  const lastLoomLifecycleState = useRef<LoomAgentState | undefined>(undefined);
+  useEffect(() => {
+    if (lastLoomLifecycleState.current === loomLifecycleState) return;
+    lastLoomLifecycleState.current = loomLifecycleState;
+    reportLoomAgentState(loomLifecycleState);
+  }, [loomLifecycleState]);
 
   // Welcome back functionality
   const {

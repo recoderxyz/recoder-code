@@ -21,9 +21,14 @@ export class Storage {
   }
 
   static getGlobalGeminiDir(): string {
-    const homeDir = os.homedir();
+    const homeDir = typeof os.homedir === 'function' ? os.homedir() : '';
     if (!homeDir) {
-      return path.join(os.tmpdir(), '.qwen');
+      const tmpDir =
+        (typeof os.tmpdir === 'function' ? os.tmpdir() : '') ||
+        process.env['TMPDIR'] ||
+        process.env['TMP'] ||
+        '/tmp';
+      return path.join(tmpDir, '.qwen');
     }
     return path.join(homeDir, GEMINI_DIR);
   }

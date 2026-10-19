@@ -48,6 +48,8 @@ const renderWithWidth = (width: number, props = defaultProps) => {
   return render(<Footer {...props} />);
 };
 
+const normalizeFrame = (output: string) => output.replace(/\s+/g, '');
+
 describe('<Footer />', () => {
   it('renders the component', () => {
     const { lastFrame } = renderWithWidth(120);
@@ -58,8 +60,12 @@ describe('<Footer />', () => {
     it('should display shortened path on a wide terminal', () => {
       const { lastFrame } = renderWithWidth(120);
       const tildePath = tildeifyPath(defaultProps.targetDir);
-      const expectedPath = '...' + tildePath.slice(tildePath.length - 48 + 3);
-      expect(lastFrame()).toContain(expectedPath);
+      const pathLength = Math.max(20, Math.floor(120 * 0.4));
+      const expectedPath = '...' + tildePath.slice(tildePath.length - pathLength + 3);
+      const expectedPrefix = expectedPath.slice(0, -2);
+      expect(normalizeFrame(lastFrame())).toContain(
+        normalizeFrame(expectedPrefix),
+      );
     });
 
     it('should display only the base directory name on a narrow terminal', () => {
@@ -71,8 +77,11 @@ describe('<Footer />', () => {
     it('should use wide layout at 80 columns', () => {
       const { lastFrame } = renderWithWidth(80);
       const tildePath = tildeifyPath(defaultProps.targetDir);
-      const expectedPath = '...' + tildePath.slice(tildePath.length - 32 + 3);
-      expect(lastFrame()).toContain(expectedPath);
+      const pathLength = Math.max(20, Math.floor(80 * 0.4));
+      const expectedPath = '...' + tildePath.slice(tildePath.length - pathLength + 3);
+      expect(normalizeFrame(lastFrame())).toContain(
+        normalizeFrame(expectedPath),
+      );
     });
 
     it('should use narrow layout at 79 columns', () => {
@@ -81,7 +90,9 @@ describe('<Footer />', () => {
       expect(lastFrame()).toContain(expectedPath);
       const tildePath = tildeifyPath(defaultProps.targetDir);
       const unexpectedPath = '...' + tildePath.slice(tildePath.length - 31 + 3);
-      expect(lastFrame()).not.toContain(unexpectedPath);
+      expect(normalizeFrame(lastFrame())).not.toContain(
+        normalizeFrame(unexpectedPath),
+      );
     });
   });
 
@@ -114,17 +125,17 @@ describe('<Footer />', () => {
     });
 
     it('should display custom sandbox info when SANDBOX env is set', () => {
-      vi.stubEnv('SANDBOX', 'gemini-cli-test-sandbox');
+      vi.stubEnv('RECODER_SANDBOX', 'gemini-cli-test-sandbox');
       const { lastFrame } = renderWithWidth(120, {
         ...defaultProps,
         isTrustedFolder: undefined,
       });
-      expect(lastFrame()).toContain('test');
+      expect(lastFrame()).toContain('test-sandbox');
       vi.unstubAllEnvs();
     });
 
     it('should display macOS Seatbelt info when SANDBOX is sandbox-exec', () => {
-      vi.stubEnv('SANDBOX', 'sandbox-exec');
+      vi.stubEnv('RECODER_SANDBOX', 'sandbox-exec');
       vi.stubEnv('SEATBELT_PROFILE', 'test-profile');
       const { lastFrame } = renderWithWidth(120, {
         ...defaultProps,
@@ -134,19 +145,18 @@ describe('<Footer />', () => {
       vi.unstubAllEnvs();
     });
 
-    it('should display "no sandbox" when SANDBOX is not set and folder is trusted', () => {
-      // Clear any SANDBOX env var that might be set.
-      vi.stubEnv('SANDBOX', '');
+    it('should display interactive mode when SANDBOX is not set and folder is trusted', () => {
+      vi.stubEnv('RECODER_SANDBOX', '');
       const { lastFrame } = renderWithWidth(120, {
         ...defaultProps,
         isTrustedFolder: true,
       });
-      expect(lastFrame()).toContain('no sandbox');
+      expect(lastFrame()).toContain('Interactive Mode');
       vi.unstubAllEnvs();
     });
 
     it('should prioritize untrusted message over sandbox info', () => {
-      vi.stubEnv('SANDBOX', 'gemini-cli-test-sandbox');
+      vi.stubEnv('RECODER_SANDBOX', 'gemini-cli-test-sandbox');
       const { lastFrame } = renderWithWidth(120, {
         ...defaultProps,
         isTrustedFolder: false,

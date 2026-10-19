@@ -1,18 +1,24 @@
 {
-  "name": "recoder-mcp-eternos",
-  "version": "2.4.0",
-  "description": "Eternos - A powerful MCP (Model Context Protocol) server with 81 tools for AI assistants by Recoder",
+  "name": "mcp-eternos",
+  "version": "2.5.0",
+  "description": "Eternos - A powerful MCP (Model Context Protocol) server with 87 tools including A2A agent-to-agent communication for AI assistants by Recoder",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "bin": {
     "mcp-eternos": "./dist/index.js",
     "eternos": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
+    "prebuild": "node -e \"const fs=require('fs');fs.rmSync('tsconfig.tsbuildinfo',{force:true});fs.rmSync('dist',{recursive:true,force:true})\"",
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "prepare": "npm run build",
     "prepublishOnly": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -29,35 +35,31 @@
     "recoder",
     "recoder-code",
     "developer-tools",
-    "automation"
+    "automation",
+    "a2a",
+    "agent-to-agent"
   ],
   "author": "Recoder Code Team <support@recoder.xyz>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/caelum0x/recoder-code.git",
+    "url": "https://github.com/recoderxyz/recoder-code.git",
     "directory": "packages/mcp-eternos"
   },
   "homepage": "https://recoder.xyz",
   "bugs": {
-    "url": "https://github.com/caelum0x/recoder-code/issues"
+    "url": "https://github.com/recoderxyz/recoder-code/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
-    "anthropic": "^0.0.0",
     "axios": "^1.12.2",
     "cheerio": "^1.0.0",
     "chokidar": "^4.0.3",
-    "dotenv": "^17.2.3",
     "fast-glob": "^3.3.2",
-    "google-search-results-nodejs": "^2.1.0",
     "js-yaml": "^4.1.0",
     "jsonpath": "^1.1.1",
     "marked": "^15.0.6",
-    "openai": "^6.5.0",
     "papaparse": "^5.5.3",
-    "pdf-parse": "^1.1.1",
-    "simple-git": "^3.28.0",
     "sqlite3": "^5.1.7",
     "xml2js": "^0.6.2",
     "zod": "^3.25.76"

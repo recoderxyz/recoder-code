@@ -15,6 +15,18 @@ import {
   getGroqProvider,
   parseModelId,
 } from '../providers/index.js';
+import { selectModel } from './models/select.js';
+import { compareModels } from './models/compare.js';
+import { RecoderAuthService } from '../services/RecoderAuthService.js';
+
+async function requireAuth(): Promise<void> {
+  const authService = new RecoderAuthService();
+  const session = await authService.getSession();
+  if (!session) {
+    console.error('❌ Please login first: recoder auth login');
+    process.exit(1);
+  }
+}
 
 const CONFIG_DIR = path.join(os.homedir(), '.recoder-code');
 const CUSTOM_MODELS_FILE = path.join(CONFIG_DIR, 'custom-models.json');
@@ -65,6 +77,7 @@ const listCommand: CommandModule<{}, { provider?: string }> = {
       type: 'string',
     }) as Argv<{ provider?: string }>,
   handler: async (argv) => {
+    await requireAuth();
     console.log(chalk.bold.cyan('\n🤖 Available Models\n'));
 
     const defaultModel = getDefaultModel();
@@ -154,6 +167,7 @@ const addCommand: CommandModule<{}, { model: string; name?: string; provider?: s
       provider?: string;
     }>,
   handler: async (argv) => {
+    await requireAuth();
     const parsed = parseModelId(argv.model);
     const models = loadCustomModels();
 
@@ -182,6 +196,7 @@ const removeCommand: CommandModule<{}, { model: string }> = {
       model: string;
     }>,
   handler: async (argv) => {
+    await requireAuth();
     const models = loadCustomModels();
     const filtered = models.filter((m) => m.id !== argv.model);
 
@@ -204,8 +219,29 @@ const setDefaultCommand: CommandModule<{}, { model: string }> = {
       model: string;
     }>,
   handler: async (argv) => {
+    await requireAuth();
     setDefaultModel(argv.model);
     console.log(chalk.green(`\n✓ Default model set to ${argv.model}\n`));
+    process.exit(0);
+  },
+};
+
+const selectCommand: CommandModule = {
+  command: 'select',
+  describe: 'Interactive model selection with fuzzy search',
+  handler: async () => {
+    await requireAuth();
+    await selectModel();
+    process.exit(0);
+  },
+};
+
+const compareCommand: CommandModule = {
+  command: 'compare',
+  describe: 'Compare multiple models side-by-side',
+  handler: async () => {
+    await requireAuth();
+    await compareModels();
     process.exit(0);
   },
 };
@@ -216,6 +252,8 @@ export const modelsCommand: CommandModule = {
   builder: (yargs: Argv) =>
     yargs
       .command(listCommand)
+      .command(selectCommand)
+      .command(compareCommand)
       .command(addCommand)
       .command(removeCommand)
       .command(setDefaultCommand)

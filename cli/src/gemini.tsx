@@ -169,6 +169,23 @@ export async function startInteractiveUI(
 
 export async function main() {
   setupUnhandledRejectionHandler();
+
+  // ===== RECODER PI SHELL (Stage A, opt-in via RECODER_PI_SHELL) =====
+  // When RECODER_PI_SHELL is set, hand off to full pi's interactive mode
+  // (@recoder/pi-coding-agent) configured with the Recoder config dir, branding,
+  // and the default recodergit + brain MCP servers. Additive + reversible: when
+  // the flag is unset (the DEFAULT) this guard is skipped entirely and the
+  // existing Ink path below runs unchanged. See docs/PI-CONSOLIDATION.md.
+  if (process.env['RECODER_PI_SHELL']) {
+    const { maybeRunRecoderPiShell } = await import(
+      './recoder-pi-shell/index.js'
+    );
+    if (await maybeRunRecoderPiShell()) {
+      return;
+    }
+  }
+  // ===== END RECODER PI SHELL =====
+
   const workspaceRoot = process.cwd();
   const settings = loadSettings(workspaceRoot);
 
@@ -194,6 +211,32 @@ export async function main() {
     await runApiKeySetup();
     process.exit(0);
   }
+
+  // ===== RECODER.XYZ AUTHENTICATION GUARD =====
+  // Require users to sign up/login before using recoder-code
+  const { RecoderAuthService } = await import('./services/RecoderAuthService.js');
+  const authService = new RecoderAuthService();
+
+  // Skip auth check for auth commands themselves and top-level login/logout/whoami
+  const authBypassCommands = ['auth', 'login', 'logout', 'whoami'];
+  const isAuthCommand = process.argv.some(arg => authBypassCommands.includes(arg));
+
+  if (!isAuthCommand) {
+    const isAuthenticated = await authService.isAuthenticated();
+
+    if (!isAuthenticated) {
+      console.log('\n🚀 Welcome to Recoder Code!\n');
+      console.log('Please sign up to continue. It\'s free - no credit card required.');
+      console.log('Just bring your own API key (OpenRouter, OpenAI, Anthropic, etc.)\n');
+      console.log('🌐 https://recoder.xyz');
+      console.log('🐦 https://x.com/recoderxyz\n');
+      console.log('To authenticate, run:\n');
+      console.log('  recoder auth login\n');
+
+      process.exit(1);
+    }
+  }
+  // ===== END AUTH GUARD =====
 
   // Check if API key is configured before proceeding
   const { isApiKeyConfigured, checkAndSetupApiKey } = await import('./setup/apiKeySetup.js');

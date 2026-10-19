@@ -255,13 +255,12 @@ export class RecoderAuthService {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(`${RECODER_API_BASE}/api/auth/cli`, {
+    const response = await fetch(`${RECODER_API_BASE}/api/auth/cli/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'refresh_token',
+        grant_type: 'refresh_token',
         refresh_token: authData.refresh_token,
-        client_id: CLIENT_ID,
       }),
     });
 
@@ -272,13 +271,15 @@ export class RecoderAuthService {
     const data = (await response.json()) as {
       access_token: string;
       refresh_token?: string;
-      expires_at: string;
+      expires_in?: number;
     };
+
+    const expiresAt = new Date(Date.now() + (data.expires_in || 7776000) * 1000);
 
     await this.saveAuthData({
       access_token: data.access_token,
       refresh_token: data.refresh_token || authData.refresh_token,
-      expires_at: data.expires_at,
+      expires_at: expiresAt.toISOString(),
       user: authData.user,
     });
   }
@@ -441,16 +442,11 @@ export class RecoderAuthService {
     verification_uri_complete: string;
     interval: number;
   }> {
-    const response = await fetch(`${RECODER_API_BASE}/api/auth/cli/authorize`, {
+    const response = await fetch(`${RECODER_API_BASE}/api/auth/cli/device`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         client_id: CLIENT_ID,
-        scope: 'cli:full profile',
-        deviceInfo: {
-          platform: process.platform,
-          hostname: 'vscode-extension',
-        },
       }),
     });
 
@@ -480,29 +476,30 @@ export class RecoderAuthService {
 
       try {
         const response = await fetch(`${RECODER_API_BASE}/api/auth/cli/token`, {
-          method: 'GET',
-          headers: {
-            'X-Device-Code': deviceCode,
-            'X-Client-Id': CLIENT_ID,
-          },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+            device_code: deviceCode,
+            client_id: CLIENT_ID,
+          }),
         });
 
         const data = (await response.json()) as {
-          token?: {
-            accessToken: string;
-            refreshToken: string;
-            expiresAt: string;
-          };
+          access_token?: string;
+          refresh_token?: string;
+          expires_in?: number;
           user?: RecoderUser;
           error?: string;
           status?: string;
         };
 
-        if (response.ok && data.token && data.user) {
+        if (response.ok && data.access_token && data.refresh_token && data.user) {
+          const expiresAt = new Date(Date.now() + (data.expires_in || 7776000) * 1000);
           return {
-            access_token: data.token.accessToken,
-            refresh_token: data.token.refreshToken,
-            expires_at: data.token.expiresAt,
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+            expires_at: expiresAt.toISOString(),
             user: data.user,
           };
         }

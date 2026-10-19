@@ -1,12 +1,24 @@
-# 🚀 Recoder Code - AI-Powered Development Tools
+#  Recoder Code - AI-Powered Development Tools
 
 [![npm version](https://badge.fury.io/js/recoder-code.svg)](https://www.npmjs.com/package/recoder-code)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0 / MIT](https://img.shields.io/badge/License-Apache--2.0%20%2F%20MIT-yellow.svg)](./NOTICE)
 [![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue.svg)](https://marketplace.visualstudio.com/items?itemName=recoder.vscode-ide-companion)
 
 ## Overview
 
 Recoder Code is an open-source AI-powered development toolkit that brings the best AI models directly to your terminal and IDE. Unlike other AI coding assistants, Recoder Code offers:
+
+### Relationship to recoder.xyz
+
+Recoder Code (this repo) is the free, standalone agent harness: a terminal CLI plus
+core library that talks directly to the AI provider of your choice (OpenRouter, your
+own Anthropic/OpenAI/Google keys, or a local Ollama) with no account required. It has
+no dependency on any hosted service.
+
+[recoder.xyz](https://recoder.xyz) is a separate, hosted product built on top of this
+harness — parallel agent workspaces, governed merges, team policy and audit, and a
+desktop app. `recoder auth login` is optional and only needed if you want to use that
+hosted layer; everything else in this repo runs fully standalone, BYOK, local-first.
 
 - **🌐 Universal AI Support**: OpenRouter (350+ models), Anthropic Claude, OpenAI, Gemini, Groq, Ollama, and custom providers
 - **🔧 Local AI Ready**: Built-in Ollama support for privacy-focused local AI
@@ -97,7 +109,7 @@ recoder /agent create --name "security-reviewer" --prompt "Focus on security vul
 ### Setup
 ```bash
 # Clone the repository
-git clone https://github.com/caelum0x/recoder-code.git
+git clone https://github.com/recoderxyz/recoder-code.git
 cd recoder-code
 
 # Install dependencies
@@ -194,7 +206,19 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+This repo is multi-licensed per package, matching how it was built:
+
+- `cli/` and `core/` — **Apache-2.0**. Both are built on top of (and retain the
+  original per-file `@license` headers from) Google's
+  [gemini-cli](https://github.com/google-gemini/gemini-cli) (Code Assist /
+  Gemini OAuth integration) and Alibaba's
+  [qwen-code](https://github.com/QwenLM/qwen-code) (Qwen OAuth device-flow
+  integration). See [NOTICE](NOTICE) for the full attribution.
+- `vscode-ide-companion/` — **Apache-2.0**, same lineage.
+- `mcp-eternos/` — **MIT**, original Recoder work.
+- This top-level `LICENSE` file (MIT) covers Recoder's own original aggregate
+  work (CLI UX, provider routing, agent system, docs) and does not relicense
+  the Apache-2.0 files above — their own headers and `NOTICE` govern them.
 
 ## 🔗 Links
 
@@ -207,10 +231,17 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-Built with ❤️ by the Recoder team. Special thanks to:
-- The AI community for inspiration and feedback
-- Contributors who help make this project better
-- Users who trust us with their development workflow
+Recoder Code is built on real open-source foundations, credited honestly (full
+detail in [NOTICE](NOTICE)):
+
+- [**gemini-cli**](https://github.com/google-gemini/gemini-cli) (Google, Apache-2.0)
+  — the Code Assist / Gemini OAuth integration in `core/src/code_assist/`.
+- [**qwen-code**](https://github.com/QwenLM/qwen-code) (Alibaba/Qwen, Apache-2.0)
+  — the Qwen OAuth device-flow integration in `core/src/qwen/`.
+- The ~85% of `core/` and `cli/` beyond those two integrations, `mcp-eternos/`,
+  and the VS Code companion's Recoder-specific commands are original Recoder
+  work.
+- Contributors and users who help make this project better.
 
 ---
 

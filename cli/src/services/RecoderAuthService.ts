@@ -258,13 +258,12 @@ export class RecoderAuthService {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(`${RECODER_API_BASE}/api/auth/cli`, {
+    const response = await fetch(`${RECODER_API_BASE}/api/auth/cli/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'refresh_token',
+        grant_type: 'refresh_token',
         refresh_token: session.refresh_token,
-        client_id: CLIENT_ID,
       }),
     });
 
@@ -274,10 +273,13 @@ export class RecoderAuthService {
 
     const data = await response.json();
 
+    // Calculate expires_at from expires_in (seconds)
+    const expiresAt = new Date(Date.now() + (data.expires_in || 7776000) * 1000);
+
     await this.saveSession({
       access_token: data.access_token,
       refresh_token: data.refresh_token || session.refresh_token,
-      expires_at: data.expires_at,
+      expires_at: expiresAt.toISOString(),
       user: session.user,
     });
   }
@@ -491,16 +493,12 @@ export class RecoderAuthService {
     verification_uri_complete: string;
     interval: number;
   }> {
-    const response = await fetch(`${RECODER_API_BASE}/api/auth/cli/authorize`, {
+    // Step 1: Request device code from /api/auth/cli/device (unauthenticated)
+    const response = await fetch(`${RECODER_API_BASE}/api/auth/cli/device`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         client_id: CLIENT_ID,
-        scope: 'cli:full profile',
-        deviceInfo: {
-          platform: process.platform,
-          hostname: os.hostname(),
-        },
       }),
     });
 
@@ -522,21 +520,29 @@ export class RecoderAuthService {
       await new Promise(resolve => setTimeout(resolve, interval * 1000));
 
       try {
+        // Use POST with JSON body as server expects (RFC 8628 compliant)
         const response = await fetch(`${RECODER_API_BASE}/api/auth/cli/token`, {
-          method: 'GET',
+          method: 'POST',
           headers: {
-            'X-Device-Code': deviceCode,
-            'X-Client-Id': CLIENT_ID,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+            device_code: deviceCode,
+            client_id: CLIENT_ID,
+          }),
         });
 
         const data = await response.json();
 
-        if (response.ok && data.token) {
+        // Server returns { status, access_token, refresh_token, expires_in, user }
+        if (response.ok && data.status === 'authorized' && data.access_token) {
+          // Calculate expires_at from expires_in (seconds)
+          const expiresAt = new Date(Date.now() + (data.expires_in || 7776000) * 1000);
           return {
-            access_token: data.token.accessToken,
-            refresh_token: data.token.refreshToken,
-            expires_at: data.token.expiresAt,
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+            expires_at: expiresAt.toISOString(),
             user: data.user,
           };
         }
@@ -548,6 +554,10 @@ export class RecoderAuthService {
 
         if (data.status === 'denied') {
           throw new Error('Authorization denied by user');
+        }
+
+        if (data.status === 'expired') {
+          throw new Error('Device code expired. Please try again.');
         }
 
         throw new Error(data.error || 'Authorization failed');
