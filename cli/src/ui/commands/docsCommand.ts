@@ -18,7 +18,7 @@ export const docsCommand: SlashCommand = {
   description: 'open full Recoder Code documentation in your browser',
   kind: CommandKind.BUILT_IN,
   action: async (context: CommandContext): Promise<void> => {
-    const docsUrl = 'https://github.com/caelum0x/recoder-code#readme';
+    const docsUrl = 'https://github.com/recoderxyz/recoder-code#readme';
 
     if (process.env['SANDBOX'] && process.env['SANDBOX'] !== 'sandbox-exec') {
       context.ui.addItem(

@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as os from 'os';
 import type { AIProvider, ProvidersConfig, ProviderModel, CustomProviderConfig } from './types.js';
 import { BUILTIN_PROVIDERS, PROVIDER_ALIASES } from './types.js';
+import { customProviderManager } from './custom-provider-manager.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.recoder-code');
 const PROVIDERS_FILE = path.join(CONFIG_DIR, 'providers.json');
@@ -14,8 +15,8 @@ const CUSTOM_PROVIDERS_DIR = path.join(CONFIG_DIR, 'custom_providers');
 
 const DEFAULT_CONFIG: ProvidersConfig = {
   version: '1.0',
-  defaultProvider: 'anthropic',
-  defaultModel: 'claude-sonnet-4-20250514',
+  defaultProvider: 'openrouter',
+  defaultModel: 'anthropic/claude-sonnet-4-20250514',
   customProviders: [],
   lastUpdated: new Date().toISOString(),
 };
@@ -84,24 +85,7 @@ export class ProviderRegistry {
    * Get all providers (builtin + custom)
    */
   getAllProviders(): AIProvider[] {
-    const customFromFiles = this.loadCustomProviderFiles();
-    const customProviders: AIProvider[] = [
-      ...this.config.customProviders,
-      ...customFromFiles,
-    ].map((p) => ({
-      id: p.id,
-      name: p.name,
-      engine: p.engine,
-      baseUrl: p.baseUrl,
-      apiKeyEnv: p.apiKeyEnv,
-      isLocal: p.isLocal ?? false,
-      isEnabled: true,
-      isBuiltin: false,
-      models: p.models,
-      headers: p.headers,
-      supportsStreaming: p.supportsStreaming ?? true,
-    }));
-
+    const customProviders = customProviderManager.getAll();
     return [...BUILTIN_PROVIDERS, ...customProviders];
   }
 

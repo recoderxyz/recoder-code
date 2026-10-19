@@ -1,0 +1,53 @@
+Recoder Code
+Copyright (c) 2024-2026 Recoder.
+
+This product includes software developed by third parties, used under their
+respective licenses. Attribution for portions derived from or ported out of
+third-party sources is recorded below; per-file `@license` headers inside
+`core/src/**` and `cli/src/**` remain the authoritative, file-level notice
+and are not altered by this summary.
+
+================================================================================
+google-gemini/gemini-cli — https://github.com/google-gemini/gemini-cli
+Copyright 2025 Google LLC. Licensed under the Apache License, Version 2.0.
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Recoder Code's Google Code Assist / Gemini OAuth integration
+(`core/src/code_assist/**`, including `oauth2.ts`) and related Gemini
+provider plumbing are ported from gemini-cli. The original `@license
+Copyright 2025 Google LLC / SPDX-License-Identifier: Apache-2.0` header is
+preserved verbatim at the top of every such file. The OAuth client id/secret
+constants in that file are gemini-cli's own published *installed-application*
+OAuth client identifiers (Google's installed-app OAuth model treats these as
+non-confidential; they ship in gemini-cli's own public source). Recoder Code
+additionally supports resolving them from `GOOGLE_OAUTH_CLIENT_ID` /
+`GOOGLE_OAUTH_CLIENT_SECRET` environment variables for operators who run
+their own Google Cloud OAuth client.
+
+================================================================================
+QwenLM/qwen-code — https://github.com/QwenLM/qwen-code
+Copyright 2025 Qwen. Licensed under the Apache License, Version 2.0.
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Recoder Code's Qwen OAuth device-flow integration (`core/src/qwen/**`,
+including `qwenOAuth2.ts`) is ported from qwen-code. The original `@license
+Copyright 2025 Qwen / SPDX-License-Identifier: Apache-2.0` header is
+preserved verbatim at the top of every such file. `QWEN_OAUTH_CLIENT_ID` is
+qwen-code's own published public OAuth client identifier for its device-code
+flow (matches the upstream project's source verbatim); it is not a secret.
+
+================================================================================
+Scope of this NOTICE: roughly 300 of the ~2,000 TypeScript sources under
+`core/src/` carry one of the two headers above (Google Code Assist + Qwen
+OAuth/device-flow integration, and the provider plumbing those two flows
+depend on). The remainder of `core/`, all of `cli/` beyond the ported OAuth
+plumbing, `mcp-eternos/`, and `vscode-ide-companion/`'s Recoder-specific
+commands are original Recoder works. `cli/package.json` and
+`vscode-ide-companion/LICENSE` already declare Apache-2.0 for those packages
+(consistent with upstream); `core/package.json` is Apache-2.0 for the same
+reason (it embeds the Apache-2.0 files above); `mcp-eternos/package.json` is
+MIT (wholly original, no upstream embedding). The repo root `LICENSE` (MIT)
+covers Recoder's own original aggregate work and documentation; it does not
+relicense the Apache-2.0 files described above, whose per-file headers
+govern those files.
+================================================================================

@@ -65,6 +65,13 @@ import { providersCommand } from '../ui/commands/providersCommand.js';
 import { connectCommand } from '../ui/commands/connectCommand.js';
 import { modelsCommand } from '../ui/commands/modelsCommand.js';
 import { agentCommand } from '../ui/commands/agentCommand.js';
+import { workspaceCommand } from '../ui/commands/workspaceCommand.js';
+import {
+  workflowCommand as workflowCmd,
+  analyticsCommand,
+  costCommand,
+  whoamiCommand,
+} from '../ui/commands/workflowCommands.js';
 
 /**
  * Loads the core, hard-coded slash commands that are an integral part
@@ -140,6 +147,11 @@ export class BuiltinCommandLoader implements ICommandLoader {
       connectCommand,
       modelsCommand,
       agentCommand,
+      workspaceCommand,
+      workflowCmd,
+      analyticsCommand,
+      costCommand,
+      whoamiCommand,
     ];
 
     return allDefinitions.filter((cmd): cmd is SlashCommand => cmd !== null);

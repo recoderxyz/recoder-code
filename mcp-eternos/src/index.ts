@@ -5,7 +5,6 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import axios from "axios";
@@ -407,9 +406,11 @@ async function generateCode(args: any) {
       case "password":
         const length = options?.length || 16;
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        const randomBuf = new Uint8Array(length);
+        crypto.getRandomValues(randomBuf);
         let password = "";
         for (let j = 0; j < length; j++) {
-          password += chars.charAt(Math.floor(Math.random() * chars.length));
+          password += chars.charAt(randomBuf[j] % chars.length);
         }
         results.push(password);
         break;
@@ -443,30 +444,120 @@ async function analyzeCode(args: any) {
     source = code;
   }
 
-  if (language !== 'javascript' && language !== 'typescript') {
-    throw new Error(`Code analysis for ${language} is not yet implemented.`);
-  }
-
   const results: any = {};
 
-  if (analysis.includes('imports')) {
-    const importRegex = /import(?:["'\s]*([\w*{}\n\r\t, ]+)from\s*)?["'\s]*([@\w/\\.\-]+)["'\s]*/g;
-    results.imports = [...source.matchAll(importRegex)].map(m => m[0]);
-  }
+  if (language === 'javascript' || language === 'typescript') {
+    if (analysis.includes('imports')) {
+      const importRegex = /import(?:["'\s]*([\w*{}\n\r\t, ]+)from\s*)?["'\s]*([@\w/\\.\-]+)["'\s]*/g;
+      results.imports = [...source.matchAll(importRegex)].map(m => m[0]);
+    }
 
-  if (analysis.includes('exports')) {
-    const exportRegex = /export\s+(?:const|let|var|function|class|type|interface)\s+(\w+)/g;
-    results.exports = [...source.matchAll(exportRegex)].map(m => m[1]);
-  }
+    if (analysis.includes('exports')) {
+      const exportRegex = /export\s+(?:const|let|var|function|class|type|interface)\s+(\w+)/g;
+      results.exports = [...source.matchAll(exportRegex)].map(m => m[1]);
+    }
 
-  if (analysis.includes('functions')) {
-    const functionRegex = /(?:async\s+)?function\s+(\w+)\s*\(/g;
-    results.functions = [...source.matchAll(functionRegex)].map(m => m[1]);
-  }
+    if (analysis.includes('functions')) {
+      const functionRegex = /(?:async\s+)?function\s+(\w+)\s*\(/g;
+      results.functions = [...source.matchAll(functionRegex)].map(m => m[1]);
+    }
 
-  if (analysis.includes('classes')) {
-    const classRegex = /class\s+(\w+)/g;
-    results.classes = [...source.matchAll(classRegex)].map(m => m[1]);
+    if (analysis.includes('classes')) {
+      const classRegex = /class\s+(\w+)/g;
+      results.classes = [...source.matchAll(classRegex)].map(m => m[1]);
+    }
+  } else if (language === 'python') {
+    if (analysis.includes('imports')) {
+      const importRegex = /^(?:import\s+[\w.]+(?:\s+as\s+\w+)?|from\s+[\w.]+\s+import\s+[\w.,\s*]+)/gm;
+      results.imports = [...source.matchAll(importRegex)].map(m => m[0]);
+    }
+
+    if (analysis.includes('exports')) {
+      const allRegex = /^__all__\s*=\s*\[([^\]]*)\]/gm;
+      const allMatch = [...source.matchAll(allRegex)];
+      if (allMatch.length > 0) {
+        const nameRegex = /["'](\w+)["']/g;
+        results.exports = [...allMatch[0][1].matchAll(nameRegex)].map(m => m[1]);
+      } else {
+        results.exports = [];
+      }
+    }
+
+    if (analysis.includes('functions')) {
+      const functionRegex = /^(?:async\s+)?def\s+(\w+)\s*\(/gm;
+      results.functions = [...source.matchAll(functionRegex)].map(m => m[1]);
+    }
+
+    if (analysis.includes('classes')) {
+      const classRegex = /^class\s+(\w+)/gm;
+      results.classes = [...source.matchAll(classRegex)].map(m => m[1]);
+    }
+  } else if (language === 'go') {
+    if (analysis.includes('imports')) {
+      const singleImportRegex = /^import\s+"([^"]+)"/gm;
+      const blockImportRegex = /^import\s*\(([\s\S]*?)\)/gm;
+      const singleImports = [...source.matchAll(singleImportRegex)].map(m => m[1]);
+      const blockImports: string[] = [];
+      for (const block of source.matchAll(blockImportRegex)) {
+        const pathRegex = /"([^"]+)"/g;
+        for (const p of block[1].matchAll(pathRegex)) {
+          blockImports.push(p[1]);
+        }
+      }
+      results.imports = [...singleImports, ...blockImports];
+    }
+
+    if (analysis.includes('exports')) {
+      const exportedFuncRegex = /^func\s+([A-Z]\w*)\s*\(/gm;
+      const exportedTypeRegex = /^type\s+([A-Z]\w*)\s+/gm;
+      const exportedVarRegex = /^(?:var|const)\s+([A-Z]\w*)\s+/gm;
+      results.exports = [
+        ...[...source.matchAll(exportedFuncRegex)].map(m => m[1]),
+        ...[...source.matchAll(exportedTypeRegex)].map(m => m[1]),
+        ...[...source.matchAll(exportedVarRegex)].map(m => m[1]),
+      ];
+    }
+
+    if (analysis.includes('functions')) {
+      const functionRegex = /^func\s+(?:\(\s*\w+\s+\*?\w+\s*\)\s+)?(\w+)\s*\(/gm;
+      results.functions = [...source.matchAll(functionRegex)].map(m => m[1]);
+    }
+
+    if (analysis.includes('classes')) {
+      const structRegex = /^type\s+(\w+)\s+struct\s*\{/gm;
+      results.classes = [...source.matchAll(structRegex)].map(m => m[1]);
+    }
+  } else if (language === 'rust') {
+    if (analysis.includes('imports')) {
+      const useRegex = /^use\s+[\w:]+(?:::\{[^}]+\})?(?:::\*)?;/gm;
+      results.imports = [...source.matchAll(useRegex)].map(m => m[0]);
+    }
+
+    if (analysis.includes('exports')) {
+      const pubFnRegex = /^pub\s+(?:async\s+)?fn\s+(\w+)\s*[<(]/gm;
+      const pubStructRegex = /^pub\s+struct\s+(\w+)/gm;
+      const pubEnumRegex = /^pub\s+enum\s+(\w+)/gm;
+      const pubTraitRegex = /^pub\s+trait\s+(\w+)/gm;
+      results.exports = [
+        ...[...source.matchAll(pubFnRegex)].map(m => m[1]),
+        ...[...source.matchAll(pubStructRegex)].map(m => m[1]),
+        ...[...source.matchAll(pubEnumRegex)].map(m => m[1]),
+        ...[...source.matchAll(pubTraitRegex)].map(m => m[1]),
+      ];
+    }
+
+    if (analysis.includes('functions')) {
+      const functionRegex = /^(?:pub\s+)?(?:async\s+)?fn\s+(\w+)\s*[<(]/gm;
+      results.functions = [...source.matchAll(functionRegex)].map(m => m[1]);
+    }
+
+    if (analysis.includes('classes')) {
+      const structRegex = /^(?:pub\s+)?struct\s+(\w+)/gm;
+      const implRegex = /^impl(?:<[^>]+>)?\s+(\w+)/gm;
+      const structs = [...source.matchAll(structRegex)].map(m => m[1]);
+      const impls = [...source.matchAll(implRegex)].map(m => m[1]);
+      results.classes = [...new Set([...structs, ...impls])];
+    }
   }
 
   if (analysis.includes('complexity')) {
@@ -1026,7 +1117,7 @@ async function textReplace(args: any) {
 
 const SearchWebInputSchema = z.object({
   query: z.string(),
-  engine: z.enum(["google", "duckduckgo", "bing"]).default("duckduckgo"),
+  engine: z.enum(["searxng", "google", "duckduckgo", "bing"]).default("searxng"),
   limit: z.number().default(10),
 });
 
@@ -1180,18 +1271,50 @@ const GetApiInfoInputSchema = z.object({
 
 async function searchWeb(args: any) {
   const { query, engine, limit } = SearchWebInputSchema.parse(args);
-  
+
   try {
-    let searchUrl = "";
-    
-    if (engine === "duckduckgo") {
-      searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    } else if (engine === "google") {
-      searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-    } else if (engine === "bing") {
-      searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+    // Strategy 1: Direct SearXNG (if SEARXNG_URL is explicitly configured, e.g. on-server)
+    const searxngDirect = process.env.SEARXNG_URL;
+    if (searxngDirect) {
+      try {
+        const params = new URLSearchParams({ q: query, format: "json", pageno: "1" });
+        if (engine && engine !== "searxng") params.set("engines", engine);
+        const response = await axios.get(`${searxngDirect}/search?${params.toString()}`, { timeout: 15000 });
+        const rawResults = response.data?.results || [];
+        const results = rawResults.slice(0, limit).map((r: any) => ({
+          title: r.title || "", url: r.url || "",
+          snippet: (r.content || "").substring(0, 300), engine: r.engine || "searxng",
+        }));
+        if (results.length > 0) {
+          return { query, engine: "searxng", count: results.length, results };
+        }
+      } catch (e: any) {
+        console.warn(`Direct SearXNG failed: ${e.message}`);
+      }
     }
-    
+
+    // Strategy 2: Recoder backend proxy — accessible from any machine via HTTPS
+    // No auth required on this endpoint; it proxies to SearXNG internally.
+    const recoderApiBase = process.env.RECODER_API_URL || "https://docker.recoder.xyz";
+    try {
+      const params = new URLSearchParams({ q: query, limit: String(limit) });
+      if (engine && engine !== "searxng") params.set("categories", engine);
+      const response = await axios.get(`${recoderApiBase}/api/web-search?${params.toString()}`, { timeout: 20000 });
+      const data = response.data?.data || response.data || {};
+      const rawResults = data.results || [];
+      const results = rawResults.slice(0, limit).map((r: any) => ({
+        title: r.title || "", url: r.url || "",
+        snippet: (r.content || "").substring(0, 300), engine: r.engine || "searxng",
+      }));
+      if (results.length > 0) {
+        return { query, engine: "searxng-proxy", count: results.length, results };
+      }
+    } catch (proxyErr: any) {
+      console.warn(`Recoder search proxy failed: ${proxyErr.message}, falling back to HTML scraping`);
+    }
+
+    // Strategy 3: HTML scraping fallback (unreliable, rate-limited, last resort)
+    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
     const response = await axios.get(searchUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -1199,48 +1322,17 @@ async function searchWeb(args: any) {
         'Accept-Language': 'en-US,en;q=0.5',
       },
     });
-    
+
     const $ = cheerio.load(response.data);
     const results: any[] = [];
-    
-    if (engine === "duckduckgo") {
-      $('.result').slice(0, limit).each((_, el) => {
-        const title = $(el).find('.result__a').text().trim();
-        const url = $(el).find('.result__a').attr('href');
-        const snippet = $(el).find('.result__snippet').text().trim();
-        
-        if (title && url) {
-          results.push({ title, url, snippet });
-        }
-      });
-    } else if (engine === "google") {
-      $('.g').slice(0, limit).each((_, el) => {
-        const title = $(el).find('h3').text().trim();
-        const url = $(el).find('a').first().attr('href');
-        const snippet = $(el).find('.VwiC3b').text().trim() || $(el).find('.IsZvec').text().trim();
-        
-        if (title && url && url.startsWith('http')) {
-          results.push({ title, url, snippet });
-        }
-      });
-    } else if (engine === "bing") {
-      $('.b_algo').slice(0, limit).each((_, el) => {
-        const title = $(el).find('h2').text().trim();
-        const url = $(el).find('h2 a').attr('href');
-        const snippet = $(el).find('.b_caption p').text().trim();
-        
-        if (title && url) {
-          results.push({ title, url, snippet });
-        }
-      });
-    }
-    
-    return {
-      query,
-      engine,
-      count: results.length,
-      results,
-    };
+    $('.result').slice(0, limit).each((_, el) => {
+      const title = $(el).find('.result__a').text().trim();
+      const url = $(el).find('.result__a').attr('href');
+      const snippet = $(el).find('.result__snippet').text().trim();
+      if (title && url) results.push({ title, url, snippet });
+    });
+
+    return { query, engine: "duckduckgo-fallback", count: results.length, results };
   } catch (error: any) {
     throw new Error(`Web search failed: ${error.message}`);
   }
@@ -3322,7 +3414,129 @@ async function complexityAnalysis(args: any) {
 // SERVER SETUP
 // ============================================================================
 
-const tools: any[] = [
+// Convert Zod schemas to JSON Schema for MCP protocol compatibility
+function zodSchemaToJsonSchema(schema: any): any {
+  // If it's already a plain JSON Schema object (has type: "object"), return as-is
+  if (schema && schema.type === "object" && schema.properties !== undefined) {
+    return schema;
+  }
+  // If it's a Zod schema (has _def), convert it manually
+  if (schema && schema._def) {
+    return convertZodToJsonSchema(schema);
+  }
+  // Fallback: empty object schema
+  return { type: "object", properties: {} };
+}
+
+function convertZodToJsonSchema(zodSchema: any): any {
+  const def = zodSchema._def;
+  if (!def) return { type: "object", properties: {} };
+
+  switch (def.typeName) {
+    case "ZodObject": {
+      const shape = zodSchema.shape || {};
+      const properties: any = {};
+      const required: string[] = [];
+
+      for (const [key, value] of Object.entries(shape)) {
+        const fieldSchema = value as any;
+        properties[key] = convertZodFieldToJsonSchema(fieldSchema);
+        // Check if the field is required (not optional and not defaulted)
+        if (!isOptionalOrDefaulted(fieldSchema)) {
+          required.push(key);
+        }
+      }
+
+      const result: any = { type: "object", properties };
+      if (required.length > 0) result.required = required;
+      return result;
+    }
+    default:
+      return { type: "object", properties: {} };
+  }
+}
+
+function isOptionalOrDefaulted(schema: any): boolean {
+  const def = schema?._def;
+  if (!def) return false;
+  if (def.typeName === "ZodOptional") return true;
+  if (def.typeName === "ZodDefault") return true;
+  if (def.typeName === "ZodNullable") return true;
+  // Check inner schema for chained types
+  if (def.innerType) return isOptionalOrDefaulted(def.innerType);
+  return false;
+}
+
+function convertZodFieldToJsonSchema(zodField: any): any {
+  const def = zodField?._def;
+  if (!def) return {};
+
+  const result: any = {};
+
+  // Extract description
+  if (def.description) result.description = def.description;
+
+  switch (def.typeName) {
+    case "ZodString": {
+      result.type = "string";
+      // Check for URL validation
+      if (def.checks) {
+        for (const check of def.checks) {
+          if (check.kind === "url") result.format = "uri";
+          if (check.kind === "email") result.format = "email";
+        }
+      }
+      break;
+    }
+    case "ZodNumber":
+      result.type = "number";
+      break;
+    case "ZodBoolean":
+      result.type = "boolean";
+      break;
+    case "ZodArray":
+      result.type = "array";
+      if (def.type) result.items = convertZodFieldToJsonSchema(def.type);
+      break;
+    case "ZodEnum":
+      result.type = "string";
+      result.enum = def.values;
+      break;
+    case "ZodDefault":
+      Object.assign(result, convertZodFieldToJsonSchema(def.innerType));
+      result.default = def.defaultValue();
+      break;
+    case "ZodOptional":
+      Object.assign(result, convertZodFieldToJsonSchema(def.innerType));
+      break;
+    case "ZodNullable":
+      Object.assign(result, convertZodFieldToJsonSchema(def.innerType));
+      break;
+    case "ZodRecord":
+      result.type = "object";
+      if (def.valueType) result.additionalProperties = convertZodFieldToJsonSchema(def.valueType);
+      break;
+    case "ZodObject":
+      Object.assign(result, convertZodToJsonSchema(zodField));
+      break;
+    case "ZodAny":
+      // No type restriction
+      break;
+    case "ZodLiteral":
+      result.const = def.value;
+      break;
+    case "ZodUnion":
+      result.oneOf = def.options.map((o: any) => convertZodFieldToJsonSchema(o));
+      break;
+    default:
+      // Fallback
+      break;
+  }
+
+  return result;
+}
+
+const rawTools: any[] = [
   {
     name: "fetch_url",
     description: "Fetches content from a URL using various HTTP methods.",
@@ -3866,12 +4080,109 @@ const tools: any[] = [
       required: ["provider", "text"],
     },
   },
+  // ── Recoder A2A Tools ──
+  {
+    name: "recoder_list_agents",
+    description: "List all agents connected to the Recoder A2A platform (codex, claude_code, recoder_app, etc.)",
+    inputSchema: z.object({}),
+  },
+  {
+    name: "recoder_list_tasks",
+    description: "List recent tasks on the Recoder A2A platform",
+    inputSchema: z.object({}),
+  },
+  {
+    name: "recoder_send_task",
+    description: "Send a task to another agent on the Recoder platform via A2A protocol",
+    inputSchema: z.object({
+      target_agent: z.string().describe("Target agent ID (codex, claude_code, recoder_app, recoder_agents)"),
+      task: z.string().describe("Task description"),
+      capability: z.enum(["execute", "plan", "edit"]).default("execute"),
+    }),
+  },
+  {
+    name: "recoder_create_thread",
+    description: "Create a new AI agent thread on agents.recoder.xyz with a Daytona sandbox",
+    inputSchema: z.object({
+      prompt: z.string().describe("The prompt/message to send to the agent"),
+    }),
+  },
+  {
+    name: "recoder_sandbox_run",
+    description: "Run a command in a Daytona sandbox (Python, Node.js, shell)",
+    inputSchema: z.object({
+      command: z.string().describe("Shell command to execute"),
+    }),
+  },
 ];
+
+// Convert all Zod inputSchemas to JSON Schema for MCP protocol compatibility
+const tools = rawTools.map(tool => ({
+  ...tool,
+  inputSchema: zodSchemaToJsonSchema(tool.inputSchema),
+}));
+
+// ── A2A Tool Implementations ──
+const RECODER_API = process.env.RECODER_API_URL || "https://docker.recoder.xyz";
+const RECODER_BACKEND = process.env.RECODER_BACKEND_URL || "https://api.recoder.xyz";
+const DAYTONA_URL = process.env.DAYTONA_API_URL || "http://localhost:3900/api";
+const DAYTONA_KEY = process.env.DAYTONA_API_KEY || "";
+
+async function recoderListAgents() {
+  const res = await axios.get(`${RECODER_API}/api/a2a/agents`);
+  return res.data;
+}
+
+async function recoderListTasks() {
+  const res = await axios.get(`${RECODER_API}/api/a2a/tasks`);
+  return res.data;
+}
+
+async function recoderSendTask(args: any) {
+  const res = await axios.post(`${RECODER_API}/api/a2a/tasks`, {
+    target: args.target_agent,
+    task: args.task,
+    capability: args.capability || "execute",
+    from: "recoder_code",
+  });
+  return res.data;
+}
+
+async function recoderCreateThread(args: any) {
+  const formData = new URLSearchParams();
+  formData.append("prompt", args.prompt);
+  const res = await axios.post(`${RECODER_BACKEND}/v1/agent/start`, formData.toString(), {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  });
+  return res.data;
+}
+
+async function recoderSandboxRun(args: any) {
+  if (!DAYTONA_KEY) return { error: "DAYTONA_API_KEY not set" };
+  // Create temp sandbox
+  const createRes = await axios.post(`${DAYTONA_URL}/sandbox`, {
+    snapshot: "daytonaio/sandbox:0.5.0-slim",
+    public: true,
+    autoStopInterval: 10,
+  }, { headers: { Authorization: `Bearer ${DAYTONA_KEY}` } });
+  const sandboxId = createRes.data.id;
+  // Wait for start
+  await new Promise(r => setTimeout(r, 8000));
+  // Execute
+  const execRes = await axios.post(`${DAYTONA_URL.replace('/api','')}:3900/api/toolbox/${sandboxId}/toolbox/process/execute`, {
+    command: args.command,
+  }, { headers: { Authorization: `Bearer ${DAYTONA_KEY}` } });
+  // Cleanup
+  await axios.delete(`${DAYTONA_URL}/sandbox/${sandboxId}`, {
+    headers: { Authorization: `Bearer ${DAYTONA_KEY}` },
+  }).catch(() => {});
+  return execRes.data;
+}
 
 const server = new Server(
   {
     name: "eternos",
-    version: "2.4.0",
+    version: "2.5.0",
   },
   {
     capabilities: {
@@ -4138,6 +4449,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         result = await aiEmbed(args);
         break;
 
+      // ── Recoder A2A Tools ──
+      case "recoder_list_agents":
+        result = await recoderListAgents();
+        break;
+      case "recoder_list_tasks":
+        result = await recoderListTasks();
+        break;
+      case "recoder_send_task":
+        result = await recoderSendTask(args);
+        break;
+      case "recoder_create_thread":
+        result = await recoderCreateThread(args);
+        break;
+      case "recoder_sandbox_run":
+        result = await recoderSandboxRun(args);
+        break;
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -4168,12 +4496,12 @@ async function main() {
   await server.connect(transport);
   
   console.error("╔════════════════════════════════════════════════════════════╗");
-  console.error("║   🚀 Eternos MCP Server v2.4 - Advanced Developer Tools   ║");
-  console.error("║   📦 81 Powerful Tools for AI Assistants                  ║");
-  console.error("║   🌟 By Recoder - https://recoder.xyz                     ║");
+  console.error("║   Eternos MCP Server v2.5 - Advanced Developer Tools      ║");
+  console.error("║   87 Tools + A2A Agent Communication for AI Assistants     ║");
+  console.error("║   By Recoder - https://recoder.xyz                         ║");
   console.error("╚════════════════════════════════════════════════════════════╝");
-  console.error("📡 Connected via stdio transport");
-  console.error("✨ Ready to assist!");
+  console.error("Connected via stdio transport");
+  console.error("Ready to assist!");
 }
 
 main().catch((error) => {

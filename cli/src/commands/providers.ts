@@ -7,12 +7,39 @@ import { listProviders } from './providers/list.js';
 import { listProviderModels } from './providers/models.js';
 import { pullModel } from './providers/pull.js';
 import { configureProvider } from './providers/config.js';
+import { RecoderAuthService } from '../services/RecoderAuthService.js';
+import { detectAndReport } from '../providers/local-detection.js';
+import { monitorProviders } from './providers/health.js';
 
 const listCommand: CommandModule = {
   command: 'list',
   describe: 'List all available providers',
   handler: async () => {
+    const authService = new RecoderAuthService();
+    const session = await authService.getSession();
+    if (!session) {
+      console.error('❌ Please login first: recoder auth login');
+      process.exit(1);
+    }
     await listProviders();
+    process.exit(0);
+  },
+};
+
+const detectCommand: CommandModule = {
+  command: 'detect',
+  describe: 'Detect running local AI servers',
+  handler: async () => {
+    await detectAndReport();
+    process.exit(0);
+  },
+};
+
+const healthCommand: CommandModule = {
+  command: 'health',
+  describe: 'Monitor provider health status',
+  handler: async () => {
+    await monitorProviders();
     process.exit(0);
   },
 };
@@ -26,6 +53,12 @@ const modelsCommand: CommandModule<{}, { provider?: string }> = {
       type: 'string',
     }) as Argv<{ provider?: string }>,
   handler: async (argv) => {
+    const authService = new RecoderAuthService();
+    const session = await authService.getSession();
+    if (!session) {
+      console.error('❌ Please login first: recoder auth login');
+      process.exit(1);
+    }
     await listProviderModels(argv.provider);
     process.exit(0);
   },
@@ -41,6 +74,12 @@ const pullCommand: CommandModule<{}, { model: string }> = {
       demandOption: true,
     }) as Argv<{ model: string }>,
   handler: async (argv) => {
+    const authService = new RecoderAuthService();
+    const session = await authService.getSession();
+    if (!session) {
+      console.error('❌ Please login first: recoder auth login');
+      process.exit(1);
+    }
     await pullModel(argv.model);
     process.exit(0);
   },
@@ -55,6 +94,12 @@ const configCommand: CommandModule<{}, { provider?: string }> = {
       type: 'string',
     }) as Argv<{ provider?: string }>,
   handler: async (argv) => {
+    const authService = new RecoderAuthService();
+    const session = await authService.getSession();
+    if (!session) {
+      console.error('❌ Please login first: recoder auth login');
+      process.exit(1);
+    }
     await configureProvider(argv.provider);
     process.exit(0);
   },
@@ -66,12 +111,20 @@ export const providersCommand: CommandModule = {
   builder: (yargs: Argv) =>
     yargs
       .command(listCommand)
+      .command(detectCommand)
+      .command(healthCommand)
       .command(modelsCommand)
       .command(pullCommand)
       .command(configCommand)
       .demandCommand(0)
       .version(false),
   handler: async () => {
+    const authService = new RecoderAuthService();
+    const session = await authService.getSession();
+    if (!session) {
+      console.error('❌ Please login first: recoder auth login');
+      process.exit(1);
+    }
     await listProviders();
     process.exit(0);
   },

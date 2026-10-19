@@ -2,7 +2,7 @@
   "name": "recoder-code-vscode-companion",
   "displayName": "Recoder Code",
   "description": "AI-powered coding assistant with 12+ providers: OpenRouter, OpenAI, Anthropic, Ollama, LM Studio, Groq, DeepSeek, Mistral, and more. Free tier available.",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "publisher": "recoder",
   "author": {
     "name": "Recoder",
@@ -19,7 +19,7 @@
   },
   "homepage": "https://recoder.xyz",
   "engines": {
-    "vscode": "^1.95.0"
+    "vscode": "^1.90.0"
   },
   "license": "LICENSE",
   "preview": true,
@@ -239,6 +239,56 @@
         "command": "recoder.sidebar.refresh",
         "title": "Recoder Code: Refresh Sidebar",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "recoder.refactor.renameSymbol",
+        "title": "Recoder Code: Rename Symbol Across Files",
+        "icon": "$(replace-all)"
+      },
+      {
+        "command": "recoder.refactor.aiRefactor",
+        "title": "Recoder Code: AI Refactor Workspace",
+        "icon": "$(wand)"
+      },
+      {
+        "command": "recoder.refactor.findReferences",
+        "title": "Recoder Code: Find All References",
+        "icon": "$(references)"
+      },
+      {
+        "command": "recoder.refactor.applyAll",
+        "title": "Recoder Code: Apply All Pending Changes",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "recoder.refactor.rejectAll",
+        "title": "Recoder Code: Reject All Pending Changes",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "recoder.refactor.showDiff",
+        "title": "Recoder Code: Show Refactor Diff",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "recoder.codeIndex.reindex",
+        "title": "Recoder Code: Re-index Workspace",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "recoder.codeIndex.search",
+        "title": "Recoder Code: Search Symbols",
+        "icon": "$(search)"
+      },
+      {
+        "command": "recoder.codeIndex.showInsights",
+        "title": "Recoder Code: Show Project Insights",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "recoder.codeIndex.findUsages",
+        "title": "Recoder Code: Find All Usages",
+        "icon": "$(references)"
       }
     ],
     "viewsContainers": {
@@ -352,6 +402,16 @@
           "command": "recoder.code.generateTests",
           "when": "editorHasSelection",
           "group": "recoder@4"
+        },
+        {
+          "command": "recoder.refactor.renameSymbol",
+          "when": "editorTextFocus",
+          "group": "recoder@5"
+        },
+        {
+          "command": "recoder.refactor.findReferences",
+          "when": "editorTextFocus",
+          "group": "recoder@6"
         }
       ]
     },
@@ -361,7 +421,16 @@
         "recoderCode.defaultProvider": {
           "type": "string",
           "default": "openrouter",
-          "enum": ["openrouter", "openai", "anthropic", "groq", "ollama", "deepseek", "mistral", "google"],
+          "enum": [
+            "openrouter",
+            "openai",
+            "anthropic",
+            "groq",
+            "ollama",
+            "deepseek",
+            "mistral",
+            "google"
+          ],
           "enumDescriptions": [
             "OpenRouter (350+ models, free tier available)",
             "OpenAI (GPT-4, GPT-4o, requires API key)",
@@ -435,17 +504,30 @@
         "recoderCode.theme": {
           "type": "string",
           "default": "auto",
-          "enum": ["auto", "light", "dark", "high-contrast"],
+          "enum": [
+            "auto",
+            "light",
+            "dark",
+            "high-contrast"
+          ],
           "description": "Theme for Recoder Code UI components"
         },
         "recoderCode.diffTheme": {
           "type": "string",
           "default": "auto",
-          "enum": ["auto", "github", "monokai", "solarized", "dracula", "nord", "custom"],
+          "enum": [
+            "auto",
+            "github",
+            "monokai",
+            "solarized",
+            "dracula",
+            "nord",
+            "custom"
+          ],
           "enumDescriptions": [
             "Follow VS Code theme",
             "GitHub-style diff colors",
-            "Monokai Pro diff theme", 
+            "Monokai Pro diff theme",
             "Solarized diff colors",
             "Dracula diff theme",
             "Nord diff theme",
@@ -464,13 +546,13 @@
               "description": "Background color for added lines"
             },
             "addedForeground": {
-              "type": "string", 
+              "type": "string",
               "default": "#ffffff",
               "description": "Text color for added lines"
             },
             "removedBackground": {
               "type": "string",
-              "default": "#5f1e1e", 
+              "default": "#5f1e1e",
               "description": "Background color for removed lines"
             },
             "removedForeground": {
@@ -485,7 +567,7 @@
             },
             "modifiedForeground": {
               "type": "string",
-              "default": "#ffffff", 
+              "default": "#ffffff",
               "description": "Text color for modified lines"
             }
           }
@@ -500,7 +582,7 @@
               "description": "OpenAI API key"
             },
             "anthropic": {
-              "type": "string", 
+              "type": "string",
               "description": "Anthropic API key"
             },
             "groq": {
@@ -548,7 +630,10 @@
                 "description": "Available models for this provider"
               }
             },
-            "required": ["name", "baseURL"]
+            "required": [
+              "name",
+              "baseURL"
+            ]
           }
         },
         "recoderCode.ollamaHost": {
@@ -557,7 +642,7 @@
           "description": "Ollama server host URL"
         },
         "recoderCode.lmStudioHost": {
-          "type": "string", 
+          "type": "string",
           "default": "http://localhost:1234",
           "description": "LM Studio server host URL"
         }
@@ -602,7 +687,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "20.x",
-    "@types/vscode": "^1.95.0",
+    "@types/vscode": "^1.90.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "@vitest/ui": "^3.2.4",
@@ -618,7 +703,7 @@
     "express": "^5.1.0",
     "openai": "^5.21.0",
     "open": "^10.1.0",
-    "recoder-code-core": "*",
+    "recoder-code-core": "^2.4.5",
     "zod": "^3.25.76"
   }
 }

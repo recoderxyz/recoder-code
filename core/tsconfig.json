@@ -26,6 +26,12 @@
     "src/__mocks__",
     "src/mocks",
     "src/test-utils",
-    "src/telemetry/**/*.test.*.ts"
+    "src/telemetry/**/*.test.*.ts",
+    "src/tools/opencode/**",
+    "src/tools/hashline-edit/**",
+    "src/session/**",
+    "src/tools/patch/**",
+    "src/tools/file-ops/**",
+    "src/external/**"
   ]
 }

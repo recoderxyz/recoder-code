@@ -342,12 +342,7 @@ export class ChatHistorySyncService {
   }
 
   private generateUrlId(): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 16; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+    return crypto.randomUUID().replace(/-/g, '').slice(0, 16);
   }
 
   private generateTitle(messages: ChatMessage[]): string {

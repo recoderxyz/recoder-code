@@ -10,6 +10,7 @@ import { addCommand } from './mcp/add.js';
 import { removeCommand } from './mcp/remove.js';
 import { listCommand } from './mcp/list.js';
 import { detectCommand } from './mcp/detect.js';
+import { marketplaceCommand } from './mcp/marketplace.js';
 
 export const mcpCommand: CommandModule = {
   command: 'mcp',
@@ -20,6 +21,7 @@ export const mcpCommand: CommandModule = {
       .command(removeCommand)
       .command(listCommand)
       .command(detectCommand)
+      .command(marketplaceCommand)
       .demandCommand(1, 'You need at least one command before continuing.')
       .version(false),
   handler: () => {

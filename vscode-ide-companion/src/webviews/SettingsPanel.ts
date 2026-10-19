@@ -1059,7 +1059,7 @@ export class SettingsPanel {
                         mistral: document.getElementById('mistralKey').value,
                         google: document.getElementById('googleKey').value
                     },
-                    customProviders: [] // TODO: Implement custom providers UI
+                    customProviders: [] // Custom providers added via settings.json
                 };
             }
             

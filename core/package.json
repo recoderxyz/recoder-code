@@ -1,7 +1,8 @@
 {
   "name": "recoder-code-core",
-  "version": "2.4.2",
+  "version": "2.4.5",
   "description": "Recoder Code Core - AI-powered coding assistant core library",
+  "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -28,6 +29,7 @@
     "@opentelemetry/exporter-trace-otlp-http": "^0.203.0",
     "@opentelemetry/instrumentation-http": "^0.203.0",
     "@opentelemetry/sdk-node": "^0.203.0",
+    "@recoder/pi-coding-agent": "workspace:*",
     "@types/glob": "^8.1.0",
     "@types/html-to-text": "^9.0.4",
     "@xterm/headless": "5.5.0",

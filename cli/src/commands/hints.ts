@@ -5,11 +5,22 @@
 import type { CommandModule, Argv } from 'yargs';
 import chalk from 'chalk';
 import { loadHints, createHintsFile, hasHints } from '../utils/hints.js';
+import { RecoderAuthService } from '../services/RecoderAuthService.js';
+
+async function requireAuth(): Promise<void> {
+  const authService = new RecoderAuthService();
+  const session = await authService.getSession();
+  if (!session) {
+    console.error('❌ Please login first: recoder auth login');
+    process.exit(1);
+  }
+}
 
 const showCommand: CommandModule = {
   command: 'show',
   describe: 'Show current project hints',
   handler: async () => {
+    await requireAuth();
     const hints = loadHints();
     if (hints) {
       console.log(chalk.cyan(`\n📋 Hints from ${hints.filePath}\n`));
@@ -27,6 +38,7 @@ const initCommand: CommandModule = {
   command: 'init',
   describe: 'Create a .recoderhints file',
   handler: async () => {
+    await requireAuth();
     if (hasHints()) {
       console.log(chalk.yellow('\n⚠️  Hints file already exists'));
       const hints = loadHints();
@@ -48,6 +60,7 @@ export const hintsCommand: CommandModule = {
   builder: (yargs: Argv) =>
     yargs.command(showCommand).command(initCommand).demandCommand(0).version(false),
   handler: async () => {
+    await requireAuth();
     const hints = loadHints();
     if (hints) {
       console.log(chalk.cyan(`\n📋 Project hints: ${hints.filePath}`));

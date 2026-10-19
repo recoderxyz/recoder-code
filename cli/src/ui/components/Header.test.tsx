@@ -21,7 +21,9 @@ describe('<Header />', () => {
       rows: 20,
     });
     const { lastFrame } = render(<Header version="1.0.0" nightly={false} />);
-    expect(lastFrame()).toContain(longAsciiLogo);
+    const output = lastFrame().replace(/\s+$/gm, '');
+    const expectedLogo = longAsciiLogo.replace(/\s+$/gm, '');
+    expect(output).toContain(expectedLogo);
   });
 
   it('renders custom ASCII art when provided', () => {

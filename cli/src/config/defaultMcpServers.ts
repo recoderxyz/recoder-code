@@ -4,13 +4,61 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { createRequire } from 'node:module';
+import { join, dirname } from 'node:path';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { MCPServerConfig } from 'recoder-code-core';
+
+/**
+ * Resolves the path to the mcp-eternos dist/index.js entry point.
+ * Tries multiple resolution strategies:
+ * 1. npm workspace resolution (via require.resolve)
+ * 2. Relative path from CLI package (sibling package in monorepo)
+ * 3. Global npx fallback
+ */
+function getMcpEternosPath(): string {
+  // Strategy 1: Try npm/workspace resolution
+  try {
+    const require = createRequire(import.meta.url);
+    const resolved = require.resolve('mcp-eternos/dist/index.js');
+    return resolved;
+  } catch {
+    // Not installed as a dependency, try other strategies
+  }
+
+  // Strategy 2: Relative path from CLI package (monorepo sibling)
+  const thisDir = dirname(fileURLToPath(import.meta.url));
+  // From packages/cli/dist/src/config/ -> packages/mcp-eternos/dist/index.js
+  const monorepoPath = join(thisDir, '..', '..', '..', '..', 'mcp-eternos', 'dist', 'index.js');
+  if (existsSync(monorepoPath)) {
+    return monorepoPath;
+  }
+
+  // Strategy 3: From source location (during development)
+  const devPath = join(thisDir, '..', '..', '..', 'mcp-eternos', 'dist', 'index.js');
+  if (existsSync(devPath)) {
+    return devPath;
+  }
+
+  // Fallback: assume it's globally installed
+  return 'mcp-eternos';
+}
 
 /**
  * Default MCP servers that come pre-configured with Recoder Code.
  * All servers listed here have been tested and confirmed working.
  */
 export const DEFAULT_MCP_SERVERS: Record<string, MCPServerConfig> = {
+  // Eternos MCP - Recoder's built-in MCP server with 107+ tools
+  eternos: {
+    command: 'node',
+    args: [getMcpEternosPath()],
+    description: `Eternos - Recoder's built-in MCP server with 107+ tools including web, file, data, and agent-to-agent communication.`,
+    trust: true,
+    timeout: 30000,
+  },
+
   // GitHub MCP - Repository management (26 tools)
   github: {
     command: 'npx',
@@ -156,6 +204,7 @@ export function getDefaultMcpServers(): Record<string, MCPServerConfig> {
 
 export function getEssentialMcpServers(): Record<string, MCPServerConfig> {
   return {
+    eternos: DEFAULT_MCP_SERVERS.eternos,
     github: DEFAULT_MCP_SERVERS.github,
     playwright: DEFAULT_MCP_SERVERS.playwright,
     filesystem: DEFAULT_MCP_SERVERS.filesystem,
@@ -211,6 +260,7 @@ export function getExtendedMcpServers(): Record<string, MCPServerConfig> {
 }
 
 export const MCP_SERVER_CATEGORIES = {
+  'built-in': ['eternos'],
   essential: ['github', 'filesystem', 'gitmcp-docs'],
   automation: ['playwright', 'puppeteer'],
   'problem-solving': ['sequential-thinking'],

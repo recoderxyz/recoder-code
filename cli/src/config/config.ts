@@ -22,6 +22,8 @@ import {
   loadServerHierarchicalMemory,
   setGeminiMdFilename as setServerGeminiMdFilename,
   ShellTool,
+  withDefaultBrainServer,
+  withDefaultCodeGraphServer,
   WriteFileTool,
 } from 'recoder-code-core';
 import * as fs from 'node:fs';
@@ -31,10 +33,10 @@ import process from 'node:process';
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs/yargs';
 import { aiCommand } from '../commands/ai.js';
+import { piCommand } from '../commands/pi.js';
 import { authCommand } from '../commands/auth.js';
 import { extensionsCommand } from '../commands/extensions.js';
 import { mcpCommand } from '../commands/mcp.js';
-import { webCommand } from '../commands/web.js';
 import { initCommand } from '../commands/init.js';
 import { planCommand } from '../commands/plan.js';
 import { providersCommand } from '../commands/providers.js';
@@ -42,6 +44,15 @@ import { agentsCommand } from '../commands/agents.js';
 import { hintsCommand } from '../commands/hints.js';
 import { modelsCommand } from '../commands/models-cmd.js';
 import { configureCommand } from '../commands/configure.js';
+import { connectCommand } from '../commands/connect-cmd.js';
+import { parallelCommand, parallelFinishCommand } from '../commands/parallel.js';
+import { conductorCommand } from '../commands/conductor.js';
+import { setupMcpCommand } from '../commands/setupMcp.js';
+import {
+  topLevelLoginCommand,
+  topLevelLogoutCommand,
+  topLevelWhoamiCommand,
+} from '../commands/login.js';
 import type { Settings } from './settings.js';
 
 import { resolvePath } from '../utils/resolvePath.js';
@@ -360,8 +371,8 @@ export async function parseArguments(settings: Settings): Promise<CliArgs> {
     .command(authCommand)
     // Register AI subcommands
     .command(aiCommand)
-    // Register web project management commands
-    .command(webCommand)
+    // Register pi agent runtime command (owned @recoder/pi-coding-agent)
+    .command(piCommand)
     // Register init command for .recoder folder
     .command(initCommand)
     // Register plan command for project planning
@@ -375,7 +386,20 @@ export async function parseArguments(settings: Settings): Promise<CliArgs> {
     // Register models command for model management
     .command(modelsCommand)
     // Register configure command for interactive setup
-    .command(configureCommand);
+    .command(configureCommand)
+    // Register connect command for custom providers
+    .command(connectCommand)
+    // Register parallel mode commands for git worktree-based parallel execution
+    .command(parallelCommand)
+    .command(parallelFinishCommand)
+    // Register conductor command for the parallel-agent control plane
+    .command(conductorCommand)
+    // Register top-level login/logout/whoami commands for API token auth
+    .command(topLevelLoginCommand)
+    .command(topLevelLogoutCommand)
+    .command(topLevelWhoamiCommand)
+    // Register setup-mcp command for Recoder MCP server auto-configuration
+    .command(setupMcpCommand);
 
   if (settings?.experimental?.extensionManagement ?? false) {
     yargsInstance.command(extensionsCommand);
@@ -396,7 +420,7 @@ export async function parseArguments(settings: Settings): Promise<CliArgs> {
   // and not return to main CLI logic
   if (
     result._.length > 0 &&
-    (result._[0] === 'mcp' || result._[0] === 'extensions' || result._[0] === 'auth' || result._[0] === 'ai' || result._[0] === 'web' || result._[0] === 'init' || result._[0] === 'plan')
+    (result._[0] === 'mcp' || result._[0] === 'extensions' || result._[0] === 'auth' || result._[0] === 'ai' || result._[0] === 'web' || result._[0] === 'init' || result._[0] === 'plan' || result._[0] === 'parallel' || result._[0] === 'parallel-finish')
   ) {
     // Subcommands handle their own execution and process exit
     process.exit(0);
@@ -536,6 +560,16 @@ export async function loadCliConfig(
   );
 
   let mcpServers = mergeMcpServers(settings, activeExtensions);
+  // Local-first default: expose recodergit's code-graph tools out of the box.
+  // Additive + fail-safe — a user-configured `recodergit` entry wins, a falsy
+  // entry or RECODER_CODE_GRAPH=false opts out, and an unresolved engine adds
+  // nothing rather than a broken server.
+  mcpServers = withDefaultCodeGraphServer(mcpServers);
+  // Local-first default: expose the Brain's shared-memory tools out of the box
+  // (brain_assemble / brain_recall / brain_record). Additive + fail-safe — a
+  // user-configured `brain` entry wins, a falsy entry or RECODER_BRAIN=false opts
+  // out, and an unresolved Brain entry adds nothing rather than a broken server.
+  mcpServers = withDefaultBrainServer(mcpServers);
   const question = argv.promptInteractive || argv.prompt || '';
 
   // Determine approval mode with backward compatibility

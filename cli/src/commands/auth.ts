@@ -12,6 +12,7 @@ import { statusCommand } from './auth/status.js';
 import { setApiKeyCommand } from './auth/set-api-key.js';
 import { quotaCommand } from './auth/quota.js';
 import { whoamiCommand } from './auth/whoami.js';
+import { setupMcpAuthCommand } from './auth/setup-mcp.js';
 
 export const authCommand: CommandModule = {
   command: 'auth',
@@ -24,6 +25,7 @@ export const authCommand: CommandModule = {
       .command(setApiKeyCommand)
       .command(quotaCommand)
       .command(whoamiCommand)
+      .command(setupMcpAuthCommand)
       .demandCommand(1, 'You need at least one command before continuing.')
       .version(false),
   handler: () => {

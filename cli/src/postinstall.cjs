@@ -27,7 +27,8 @@ function isConfigured() {
 }
 
 console.log('\n╔════════════════════════════════════════════════════════╗');
-console.log('║       🚀 Recoder Code v2.4.1 Installed!              ║');
+const pkg = require('../package.json');
+console.log(`║       🚀 Recoder Code v${pkg.version} Installed!              ║`);
 console.log('╚════════════════════════════════════════════════════════╝\n');
 
 if (isConfigured()) {
@@ -50,7 +51,7 @@ if (isConfigured()) {
 console.log('📚 Documentation:');
 console.log('  API_KEY_SETUP_GUIDE.md        # Setup guide');
 console.log('  QUICK_START.md                # Quick reference');
-console.log('  GitHub: https://github.com/caelum0x/recoder-code\n');
+console.log('  GitHub: https://github.com/recoderxyz/recoder-code\n');
 
 console.log('💡 Inside the CLI:');
 console.log('  /setup                        # Configure API keys');

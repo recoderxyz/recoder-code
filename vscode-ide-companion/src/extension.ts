@@ -33,14 +33,16 @@ import { SettingsPanel } from './webviews/SettingsPanel.js';
 import { RecoderCodeLensProvider } from './providers/CodeLensProvider.js';
 import { registerCodeLensCommands } from './commands/codelens/codeLensCommands.js';
 import { GhostProvider, registerGhostCommands } from './providers/GhostProvider.js';
-import { 
-  AuthStatusViewProvider, 
-  ModelSelectorViewProvider, 
-  ProvidersViewProvider, 
-  ChatHistoryViewProvider, 
+import {
+  AuthStatusViewProvider,
+  ModelSelectorViewProvider,
+  ProvidersViewProvider,
+  ChatHistoryViewProvider,
   QuickActionsViewProvider,
-  registerSidebarCommands 
+  registerSidebarCommands
 } from './views/SidebarProvider.js';
+import { registerMultiFileRefactorCommands } from './commands/refactor/multiFileRefactorCommands.js';
+import { CodeIndexManager, registerCodeIndexCommands } from './services/CodeIndexManager.js';
 
 const INFO_MESSAGE_SHOWN_KEY = 'recoderCodeInfoMessageShown';
 export const DIFF_SCHEME = 'recoder-diff';
@@ -102,6 +104,15 @@ export async function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(...registerGhostCommands(context, ghostProvider));
   log('Ghost provider (inline suggestions) registered');
+
+  // Register Multi-File Refactor commands
+  context.subscriptions.push(...registerMultiFileRefactorCommands(context, providerService, authService));
+  log('Multi-file refactor commands registered');
+
+  // Initialize Code Index Manager for workspace analysis
+  const codeIndexManager = new CodeIndexManager(context);
+  context.subscriptions.push(...registerCodeIndexCommands(context, codeIndexManager));
+  log('Code index manager initialized');
 
   // Register enhanced sidebar views
   const sidebarAuthStatusView = new AuthStatusViewProvider(authService, context);
@@ -273,7 +284,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
 
       if (selectedFolder) {
-        const recoderCmd = 'recoder';
+        const recoderCmd = findRecoderCliCommand(context);
         const terminal = vscode.window.createTerminal({
           name: `Recoder Code (${selectedFolder.name})`,
           cwd: selectedFolder.uri.fsPath,
@@ -290,6 +301,47 @@ export async function activate(context: vscode.ExtensionContext) {
       await vscode.window.showTextDocument(noticePath);
     }),
   );
+}
+
+/**
+ * Resolves the best way to launch the recoder-code CLI.
+ * Tries multiple strategies:
+ * 1. Bundled CLI binary relative to the extension (monorepo sibling package)
+ * 2. Globally installed `recoder-code` command
+ * 3. Falls back to `npx recoder-code`
+ */
+function findRecoderCliCommand(context: vscode.ExtensionContext): string {
+  const fs = require('fs') as typeof import('fs');
+  const path = require('path') as typeof import('path');
+
+  // Strategy 1: Monorepo sibling - extension is at packages/vscode-ide-companion,
+  // CLI is at packages/cli/dist/index.js
+  const extensionPath = context.extensionPath;
+  const monorepoCliPath = path.join(extensionPath, '..', 'cli', 'dist', 'index.js');
+  if (fs.existsSync(monorepoCliPath)) {
+    return `node "${monorepoCliPath}"`;
+  }
+
+  // Strategy 2: Check if recoder-code is globally available
+  try {
+    const { execSync } = require('child_process') as typeof import('child_process');
+    execSync('recoder-code --version', { stdio: 'ignore', timeout: 5000 });
+    return 'recoder-code';
+  } catch {
+    // Not globally installed
+  }
+
+  // Strategy 3: Try the `recoder` alias
+  try {
+    const { execSync } = require('child_process') as typeof import('child_process');
+    execSync('recoder --version', { stdio: 'ignore', timeout: 5000 });
+    return 'recoder';
+  } catch {
+    // Not globally installed
+  }
+
+  // Strategy 4: Use npx as last resort
+  return 'npx recoder-code';
 }
 
 export async function deactivate(): Promise<void> {

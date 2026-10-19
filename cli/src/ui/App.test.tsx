@@ -602,7 +602,7 @@ describe('App UI', () => {
     );
     currentUnmount = unmount;
     await Promise.resolve();
-    expect(lastFrame()).toContain('1 open file (ctrl+g to view)');
+    expect(lastFrame()).toContain('1 open file • ctrl+g to view');
   });
 
   it('should not display any files when not available', async () => {
@@ -657,7 +657,7 @@ describe('App UI', () => {
     );
     currentUnmount = unmount;
     await Promise.resolve();
-    expect(lastFrame()).toContain('3 open files (ctrl+g to view)');
+    expect(lastFrame()).toContain('3 open files • ctrl+g to view');
   });
 
   it('should display active file and other context', async () => {
@@ -686,7 +686,7 @@ describe('App UI', () => {
     currentUnmount = unmount;
     await Promise.resolve();
     expect(lastFrame()).toContain(
-      'Using: 1 open file (ctrl+g to view) | 1 RECODER.md file',
+      '📎 1 open file • ctrl+g to view | 1 RECODER.md file',
     );
   });
 
@@ -706,7 +706,7 @@ describe('App UI', () => {
     );
     currentUnmount = unmount;
     await Promise.resolve(); // Wait for any async updates
-    expect(lastFrame()).toContain('Using: 1 RECODER.md file');
+    expect(lastFrame()).toContain('1 RECODER.md file');
   });
 
   it('should display default "RECODER.md" with plural when contextFileName is not set and count is > 1', async () => {
@@ -724,7 +724,7 @@ describe('App UI', () => {
     );
     currentUnmount = unmount;
     await Promise.resolve();
-    expect(lastFrame()).toContain('Using: 2 RECODER.md files');
+    expect(lastFrame()).toContain('2 RECODER.md files');
   });
 
   it('should display custom contextFileName in footer when set and count is 1', async () => {
@@ -748,7 +748,7 @@ describe('App UI', () => {
     );
     currentUnmount = unmount;
     await Promise.resolve();
-    expect(lastFrame()).toContain('Using: 1 AGENTS.md file');
+    expect(lastFrame()).toContain('1 AGENTS.md file');
   });
 
   it('should display a generic message when multiple context files with different names are provided', async () => {
@@ -775,7 +775,7 @@ describe('App UI', () => {
     );
     currentUnmount = unmount;
     await Promise.resolve();
-    expect(lastFrame()).toContain('Using: 2 context files');
+    expect(lastFrame()).toContain('2 context files');
   });
 
   it('should display custom contextFileName with plural when set and count is > 1', async () => {
@@ -803,7 +803,7 @@ describe('App UI', () => {
     );
     currentUnmount = unmount;
     await Promise.resolve();
-    expect(lastFrame()).toContain('Using: 3 MY_NOTES.TXT files');
+    expect(lastFrame()).toContain('3 MY_NOTES.TXT files');
   });
 
   it('should not display context file message if count is 0, even if contextFileName is set', async () => {
@@ -870,7 +870,8 @@ describe('App UI', () => {
     );
     currentUnmount = unmount;
     await Promise.resolve();
-    expect(lastFrame()).toContain('Using: 2 MCP servers (ctrl+t to view)');
+    expect(lastFrame()).toContain('2 MCP servers');
+    expect(lastFrame()).toContain('ctrl+t to view');
   });
 
   it('should display Tips component by default', async () => {
@@ -1262,7 +1263,7 @@ describe('App UI', () => {
       currentUnmount = unmount;
 
       expect(lastFrame()).toBeTruthy();
-      expect(lastFrame()).toContain('Type your message or @path/to/file');
+      expect(lastFrame()).toContain('Ask me anything, or try /help for commands...');
     });
   });
 
